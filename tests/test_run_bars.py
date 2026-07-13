@@ -2,8 +2,21 @@
 must run on the live/paper tick stream exactly as in the backtest."""
 import threading
 
-from qjtrader.run import LiveContext, Supervisor, _BarBuilder, run_strategy_live
+from qjtrader.run import LiveContext, Supervisor, _BarBuilder, run_strategy_live, strategy_version
 from qjtrader.strategy import Strategy
+
+
+def test_strategy_version_stable_and_param_sensitive():
+    s = _RecordingStrategy()
+    v1 = strategy_version(s, {"edge": 0.02})
+    assert v1 == strategy_version(s, {"edge": 0.02})       # deterministic
+    assert len(v1) == 8 and all(c in "0123456789abcdef" for c in v1)
+    assert v1 != strategy_version(s, {"edge": 0.03})       # params change the version
+
+    class _Other(Strategy):
+        def on_bar(self, ctx, bar):
+            self.x = 1                                       # different source
+    assert strategy_version(_Other(), {"edge": 0.02}) != v1  # code change → new version
 
 
 class _FakeOE:

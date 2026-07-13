@@ -13,7 +13,10 @@ market-data and order streams behind it.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import inspect
+import json
 import queue
 import threading
 import time
@@ -40,6 +43,19 @@ def load_strategy(path: str) -> Strategy:
         if isinstance(obj, type) and issubclass(obj, Strategy) and obj is not Strategy:
             return obj()
     raise QJError(f"no Strategy subclass found in {path}")
+
+
+def strategy_version(strategy: Strategy, params: dict[str, Any] | None) -> str:
+    """A short, stable content hash of the exact strategy code + params (plan §10.5
+    v5). Folded into the order tag so every journaled order is attributable to the
+    precise agent *version* that produced it — and a promotion is granted to a
+    version, not a name. Changing the code or the params changes the hash."""
+    try:
+        src = inspect.getsource(type(strategy))
+    except (OSError, TypeError):  # e.g. defined in a REPL — fall back to the name
+        src = type(strategy).__name__
+    blob = src + "\n" + json.dumps(params or {}, sort_keys=True, default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:8]
 
 
 # ------------------------------------------------------------------- context
@@ -322,6 +338,11 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
         strategy = load_strategy(strategy)
     stop = stop or threading.Event()
     params = params or {}
+    # Fold the immutable strategy-version hash into the tag (§10.5 v5): orders are
+    # cid'd `<tag>.<ver>-<seq>`, so the gateway's per-tag position/envelope/journal
+    # all scope to the exact version — promotion is granted to a version, not a name.
+    version = strategy_version(strategy, params)
+    versioned_tag = f"{strategy_tag}.{version}"
     # Synthesize bars from the live tick stream so bar-driven strategies run here
     # exactly as in the backtest (§10.1). `bar_interval_s` param overrides; 0 = off.
     bar_interval = float(params.get("bar_interval_s", 5.0))
@@ -329,7 +350,7 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
         try:
             with client.market_data() as md, client.orders() as oe:
                 md.subscribe(symbols)
-                ctx = LiveContext(oe, strategy_tag=strategy_tag, account=account)
+                ctx = LiveContext(oe, strategy_tag=versioned_tag, account=account)
                 ctx.params = params
                 # merge_streams returns when stop is set (clean) or a stream drops.
                 Supervisor(strategy, ctx, bar_interval=bar_interval).run(
