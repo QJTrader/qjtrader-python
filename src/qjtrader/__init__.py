@@ -15,6 +15,8 @@ Docs: https://docs.qjtrader.ai/docs/ai
 from __future__ import annotations
 
 from ._version import __version__
+from .autotools import REGISTRY as AUTO_TOOLS, Scalper, make_auto_tool
+from .backtest import BacktestReport, run_backtest, synthetic_bars
 from .client import (
     Client,
     MARKET_DATA_SCOPE,
@@ -23,16 +25,36 @@ from .client import (
 from .errors import AuthError, ConnectionClosed, QJError, TokenError
 from .market_data import MarketData
 from .orders import Orders
+from .rest import RestClient
+from .run import LiveContext, Supervisor, load_strategy, run_strategy_live
+from .runner import RunRegistry
+from .strategy import Context, PositionBook, Strategy
 
 __all__ = [
     "Client",
     "MarketData",
     "Orders",
+    "RestClient",
     "QJError",
     "TokenError",
     "AuthError",
     "ConnectionClosed",
     "MARKET_DATA_SCOPE",
     "ORDERS_SCOPE",
+    # strategy contract + run venues (§10)
+    "Strategy",
+    "Context",
+    "PositionBook",
+    "run_backtest",
+    "synthetic_bars",
+    "BacktestReport",
+    "Supervisor",
+    "LiveContext",
+    "load_strategy",
+    "run_strategy_live",
+    "RunRegistry",
+    "Scalper",
+    "make_auto_tool",
+    "AUTO_TOOLS",
     "__version__",
 ]

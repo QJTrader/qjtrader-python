@@ -70,7 +70,28 @@ def main(argv: list[str] | None = None) -> int:
     pca = sub.add_parser("cancel-all", help="cancel every open order")
     _common(pca)
 
+    pb = sub.add_parser("backtest", help="run a strategy file over synthetic/offline bars")
+    pb.add_argument("strategy", help="path to a .py file with a Strategy subclass")
+    pb.add_argument("--symbol", required=True, help="e.g. MX:CRAU26")
+    pb.add_argument("--bars", type=int, default=390, help="number of synthetic bars")
+    pb.add_argument("--interval", type=int, default=60, help="bar seconds")
+    pb.add_argument("--seed", type=int, help="synthetic seed (reproducible day)")
+    pb.add_argument("--param", action="append", default=[],
+                    help="strategy param key=value (repeatable)")
+
+    pr = sub.add_parser("run", help="run a strategy against a live/paper credential")
+    pr.add_argument("strategy", help="path to a .py file with a Strategy subclass")
+    pr.add_argument("--symbols", nargs="+", required=True)
+    pr.add_argument("--tag", default="strat", help="strategy tag on every order")
+    pr.add_argument("--account", default="")
+    pr.add_argument("--param", action="append", default=[])
+    _common(pr)
+
     a = p.parse_args(argv)
+    if a.cmd == "backtest":
+        return _cmd_backtest(a)
+    if a.cmd == "run":
+        return _cmd_run(a)
     try:
         client = _client(a)
         if a.cmd == "subscribe":
@@ -100,6 +121,62 @@ def main(argv: list[str] | None = None) -> int:
         elif a.cmd == "status":
             with client.orders() as oe:
                 print(json.dumps(oe.status(), indent=2))
+    except QJError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _parse_params(items: list[str]) -> dict:
+    out: dict = {}
+    for it in items:
+        k, _, v = it.partition("=")
+        try:
+            out[k] = json.loads(v)      # numbers/bools/JSON pass through
+        except ValueError:
+            out[k] = v                   # plain string
+    return out
+
+
+def _load_strategy_or_autotool(spec: str):
+    """A .py file path, or the name of a built-in auto-tool (e.g. 'scalper')."""
+    from .autotools import REGISTRY, make_auto_tool
+    from .run import load_strategy
+    if spec in REGISTRY:
+        return make_auto_tool(spec)
+    return load_strategy(spec)
+
+
+def _cmd_backtest(a: argparse.Namespace) -> int:
+    from .backtest import run_backtest, synthetic_bars
+    try:
+        strat = _load_strategy_or_autotool(a.strategy)
+    except QJError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    bars = synthetic_bars(a.symbol, a.bars, interval_s=a.interval, seed=a.seed)
+    params = _parse_params(a.param)
+    params.setdefault("symbol", a.symbol)     # so auto-tools scope to the tested symbol
+    report = run_backtest(strat, bars, params=params)
+    report.pop("equity_curve", None)     # keep stdout compact; PnL summary remains
+    print(json.dumps(report, indent=2, default=str))
+    return 0
+
+
+def _cmd_run(a: argparse.Namespace) -> int:
+    import signal
+    import threading
+
+    from .run import run_strategy_live
+    stop = threading.Event()
+    signal.signal(signal.SIGINT, lambda *_: stop.set())
+    try:
+        client = _client(a)
+        print(f"# running {a.strategy} on {a.symbols} (tag={a.tag}); Ctrl-C to stop",
+              file=sys.stderr)
+        run_strategy_live(client, a.strategy, symbols=a.symbols,
+                          params=_parse_params(a.param), account=a.account,
+                          strategy_tag=a.tag, stop=stop)
     except QJError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
