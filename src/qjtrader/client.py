@@ -149,6 +149,15 @@ class Client:
         """Open orders + session state on this credential (read-only)."""
         return self.orders_rest().get("/api/v1/orders")
 
+    def intent_diff(self, tag_a: str, tag_b: str, limit: int = 1000) -> dict:
+        """Diff two strategy versions'/runs' order intents from the journal (§8
+        shadow regression / L1). Tags are version-scoped (`<name>.<ver>`), so this
+        compares e.g. a new version running in shadow against the live one before
+        promoting it — decision-for-decision, flagging any divergence."""
+        from .intents import intent_diff as _diff
+        events = (self.events(limit=limit) or {}).get("events") or []
+        return _diff(events, tag_a, tag_b)
+
     def positions(self) -> dict:
         """Agent-account envelope + live positions per symbol/strategy-tag (§10.5)."""
         return self.orders_rest().get("/api/v1/positions")

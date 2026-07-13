@@ -141,6 +141,60 @@ def test_supervisor_bar_synthesis_off_by_default():
     assert strat.bars == []
 
 
+def test_restart_hydration_seeds_position_and_clears_stale_orders():
+    """On (re)connect a run must start from the gateway's TRUE position, not a fresh
+    zero (§10.1). Hydrate net from /positions and clear stale working orders."""
+    stop = threading.Event()
+    cancels = [0]
+
+    class _MD:
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def subscribe(self, _s):
+            pass
+        def messages(self, timeout=None):
+            stop.set()                      # end the run right after connect
+            return iter(())
+
+    class _OE:
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def updates(self, timeout=None):
+            return iter(())
+        def cancel_all(self):
+            cancels[0] += 1
+        def order(self, **_k):
+            pass
+        def cancel(self, _c):
+            pass
+        def replace(self, _c, **_k):
+            pass
+
+    class _Client:
+        def market_data(self):
+            return _MD()
+        def orders(self):
+            return _OE()
+        def positions(self):
+            return {"positions": {"MX:X": 3, "MX:Y": -2, "MX:Z": 0}}
+
+    seen = {}
+
+    class _Probe(Strategy):
+        def on_start(self, ctx):
+            seen["X"] = ctx.position("MX:X")
+            seen["Y"] = ctx.position("MX:Y")
+            seen["Z"] = ctx.position("MX:Z")
+
+    run_strategy_live(_Client(), _Probe(), symbols=["MX:X"], stop=stop, reconnect=False)
+    assert seen == {"X": 3, "Y": -2, "Z": 0}   # long/short net restored; flat stays flat
+    assert cancels[0] >= 1                       # stale working orders cleared on start
+
+
 def test_run_reconnects_on_stream_drop():
     """A dropped stream must not kill a run: merge_streams ends (dead detection) and
     run_strategy_live re-opens the connection until stop is set. If reconnect or the

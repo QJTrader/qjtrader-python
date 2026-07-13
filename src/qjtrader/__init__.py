@@ -25,6 +25,8 @@ from .client import (
 )
 from .errors import AuthError, ConnectionClosed, QJError, TokenError
 from .market_data import MarketData
+from .calendar import front_future, futures_strip, option_front_expiry, roll_needed
+from .intents import intent_diff
 from .orders import Orders
 from .rest import RestClient
 from .run import LiveContext, Supervisor, load_strategy, run_strategy_live
@@ -53,6 +55,11 @@ __all__ = [
     "run_l2_backtest",
     "synthetic_l2_events",
     "L2Context",
+    "intent_diff",
+    "front_future",
+    "futures_strip",
+    "option_front_expiry",
+    "roll_needed",
     "Supervisor",
     "LiveContext",
     "load_strategy",

@@ -316,13 +316,42 @@ def merge_streams(md: Any, oe: Any, *, timer_s: float = 1.0,
             yield ("timer", None)
 
 
+def _hydrate_context(client: Any, ctx: LiveContext) -> None:
+    """On (re)connect, seed the context's position book from the gateway's REAL
+    positions and clear any orders left working on the session, so a restarted run
+    starts from the true state instead of a fresh (lying) zero (§10.1 restart-
+    hydration). ``ctx.position()`` after this reflects the gateway, not 0. The exact
+    average cost isn't yet exposed by the gateway (see §12.1 journal attestation), so
+    only the signed net is restored — which is what position/limit gating needs."""
+    try:
+        pos = (client.positions() or {}).get("positions") or {}
+    except Exception:
+        pos = {}
+    for sym, net in pos.items():
+        try:
+            n = int(net)
+        except (TypeError, ValueError):
+            continue
+        if n == 0:
+            continue
+        book = ctx.books.setdefault(sym, PositionBook())
+        book.apply("buy" if n > 0 else "sell", abs(n), 1.0)  # net exact; avg a placeholder
+    # The strategy re-runs on_start with fresh state and cannot reconstruct which
+    # working cid was which, so clear the session's working orders for a clean start.
+    try:
+        ctx._oe.cancel_all()
+    except Exception:
+        pass
+
+
 def run_strategy_live(client: Any, strategy: Strategy | str, *,
                       symbols: list[str], params: dict[str, Any] | None = None,
                       account: str = "", strategy_tag: str = "strat",
                       timer_s: float = 1.0,
                       stop: threading.Event | None = None,
                       reconnect: bool = True,
-                      reconnect_backoff_s: float = 3.0) -> None:
+                      reconnect_backoff_s: float = 3.0,
+                      hydrate: bool = True) -> None:
     """Run a strategy against a live/paper credential (rung 3).
 
     `strategy` may be a Strategy instance or a path to a .py file. Opens market
@@ -352,6 +381,8 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
                 md.subscribe(symbols)
                 ctx = LiveContext(oe, strategy_tag=versioned_tag, account=account)
                 ctx.params = params
+                if hydrate:
+                    _hydrate_context(client, ctx)   # start from the TRUE position
                 # merge_streams returns when stop is set (clean) or a stream drops.
                 Supervisor(strategy, ctx, bar_interval=bar_interval).run(
                     merge_streams(md, oe, timer_s=timer_s, stop=stop))
