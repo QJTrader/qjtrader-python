@@ -30,6 +30,7 @@ Issues = "https://github.com/QJTrader/qjtrader-python/issues"
 
 [project.scripts]
 qjtrader = "qjtrader._cli:main"
+qjtrader-runner = "qjtrader.runner_service:main"
 
 [tool.hatch.version]
 path = "src/qjtrader/_version.py"
