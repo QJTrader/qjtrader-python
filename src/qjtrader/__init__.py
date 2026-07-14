@@ -25,7 +25,8 @@ from .client import (
 )
 from .errors import AuthError, ConnectionClosed, QJError, TokenError
 from .market_data import MarketData
-from .calendar import front_future, futures_strip, option_front_expiry, roll_needed
+from .calendar import (front_expiry_month, front_future, futures_strip,
+                       option_front_expiry, roll_needed)
 from .intents import intent_diff
 from .orders import Orders
 from .rest import RestClient
@@ -59,6 +60,7 @@ __all__ = [
     "front_future",
     "futures_strip",
     "option_front_expiry",
+    "front_expiry_month",
     "roll_needed",
     "Supervisor",
     "LiveContext",

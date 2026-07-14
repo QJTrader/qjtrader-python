@@ -86,6 +86,39 @@ def test_rest_real_urllib_opener_over_http():
         srv.shutdown()
 
 
+def test_client_chain_normalizes_expiry_client_side():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append(url)
+        return 200, b'{"strikes": []}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    # every spelling of Aug-2026 is normalized to YYYYMM before it hits the wire
+    for form in ("202608", "2026-08-21", "20260821", "26AUG21"):
+        calls.clear()
+        c.chain("MX:RY", form)
+        assert "data-feed.qjtrader.ai:8443/api/v1/chain" in calls[0]
+        assert "expiry=202608" in calls[0]
+    # a hopeless expiry is rejected locally with the YYYYMM hint (no round-trip)
+    with pytest.raises(ValueError, match="YYYYMM"):
+        c.chain("MX:RY", "nope")
+
+
+def test_client_expiries_hits_data_gateway():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append(url)
+        return 200, b'{"underlying": "MX:RY", "expiries": ["202608"]}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    out = c.expiries("MX:RY")
+    assert "data-feed.qjtrader.ai:8443/api/v1/expiries" in calls[0]
+    assert "underlying=MX%3ARY" in calls[0]
+    assert out["expiries"] == ["202608"]
+
+
 def test_client_events_hits_orders_gateway():
     calls = []
 

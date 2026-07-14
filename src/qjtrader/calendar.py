@@ -14,12 +14,14 @@ against a live quote before trading a thin far-dated series.
 from __future__ import annotations
 
 import datetime as _dt
+import re as _re
 
 _MONTH_CODE = {1: "F", 2: "G", 3: "H", 4: "J", 5: "K", 6: "M",
                7: "N", 8: "Q", 9: "U", 10: "V", 11: "X", 12: "Z"}
 _MONTH_ABBR = {3: "MAR", 6: "JUN", 9: "SEP", 12: "DEC",
                1: "JAN", 2: "FEB", 4: "APR", 5: "MAY", 7: "JUL", 8: "AUG",
                10: "OCT", 11: "NOV"}
+_MONTH_NUM = {v: k for k, v in _MONTH_ABBR.items()}   # "AUG" -> 8
 _QUARTERLY = (3, 6, 9, 12)
 
 
@@ -38,6 +40,35 @@ def option_front_expiry(on: _dt.date | None = None) -> _dt.date:
         y, m = (on.year + on.month // 12, on.month % 12 + 1)
         exp = third_friday(y, m)
     return exp
+
+
+def front_expiry_month(on: _dt.date | None = None) -> str:
+    """The nearest monthly option expiry as a ``YYYYMM`` month string — the value
+    ``Client.chain(...)`` / the ``/api/v1/chain`` endpoint want (they derive the
+    3rd-Friday day themselves). ``option_front_expiry`` returns the full ``date``;
+    this returns just the month key, e.g. ``front_expiry_month()`` -> ``"202608"``.
+    """
+    exp = option_front_expiry(on)
+    return f"{exp.year:04d}{exp.month:02d}"
+
+
+def normalize_expiry_month(expiry: str) -> str:
+    """Coerce a chain expiry to canonical ``YYYYMM``. Accepts ``YYYYMM`` (202608),
+    ``YYYYMMDD`` (20260821 -> 202608), the compact ``YYMONDD``/``YYMON`` forms
+    (26AUG21 / 26AUG -> 202608), and any of these with dashes/slashes/spaces.
+    Raises ``ValueError`` naming the expected format otherwise. (Mirrors the
+    server so it works even against an un-upgraded endpoint.)"""
+    s = _re.sub(r"[-/\s]", "", str(expiry)).upper()
+    if s.isdigit():
+        if len(s) >= 8:                       # YYYYMMDD(+) -> keep the month
+            s = s[:6]
+    else:
+        m = _re.fullmatch(r"(\d{2})([A-Z]{3})(\d{0,2})", s)
+        if m and m.group(2) in _MONTH_NUM:    # 26AUG / 26AUG21 -> 202608
+            s = f"20{m.group(1)}{_MONTH_NUM[m.group(2)]:02d}"
+    if not _re.fullmatch(r"\d{6}", s):
+        raise ValueError(f"expiry must be YYYYMM (e.g. 202608), got {expiry!r}")
+    return s
 
 
 def front_future(root: str, on: _dt.date | None = None, roll_days: int = 5) -> str:

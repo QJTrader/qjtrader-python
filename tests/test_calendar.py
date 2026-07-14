@@ -1,7 +1,11 @@
 """Operational calendar (§12.1) — front-month / expiry resolution."""
 import datetime as dt
+
+import pytest
+
 from qjtrader.calendar import (third_friday, option_front_expiry, front_future,
-                               futures_strip, roll_needed, option_symbol)
+                               futures_strip, roll_needed, option_symbol,
+                               front_expiry_month, normalize_expiry_month)
 
 
 def test_third_friday():
@@ -37,3 +41,18 @@ def test_roll_needed():
 
 def test_option_symbol():
     assert option_symbol("AAPL", dt.date(2026, 8, 21), 44.5, "C") == "MX:AAPL26AUG44.5C21"
+
+
+def test_front_expiry_month_is_yyyymm():
+    # the YYYYMM month string chain() wants, not option_front_expiry's date
+    assert front_expiry_month(dt.date(2026, 7, 13)) == "202607"
+    assert front_expiry_month(dt.date(2026, 7, 20)) == "202608"   # after this month's expiry
+
+
+def test_normalize_expiry_month_forms():
+    for form in ("202608", "20260821", "2026-08-21", "2026/08/21",
+                 "26AUG21", "26AUG", "26aug21"):
+        assert normalize_expiry_month(form) == "202608"
+    for bad in ("nope", "26-09", "2026", "26XYZ21", ""):
+        with pytest.raises(ValueError, match="YYYYMM"):
+            normalize_expiry_month(bad)

@@ -133,9 +133,22 @@ class Client:
             "symbol": symbol, "interval": interval, "window": window})
 
     def chain(self, underlying: str, expiry: str, at=None) -> dict:
-        """Options chain snapshot (latest, or nearest at/before `at`)."""
+        """Options chain snapshot for an ``underlying`` at a given ``expiry``.
+
+        ``expiry`` is the expiry MONTH as ``YYYYMM`` (e.g. ``"202608"`` for Aug
+        2026) — the server derives the third-Friday expiry day itself. Common
+        spellings (``"2026-08-21"``, ``"20260821"``, ``"26AUG21"``) are
+        normalized for you. Discover valid months with :meth:`expiries` or
+        :func:`qjtrader.front_expiry_month`. Returns the latest snapshot, or the
+        nearest at/before ``at``."""
+        from .calendar import normalize_expiry_month
         return self.data_rest().get("/api/v1/chain", {
-            "underlying": underlying, "expiry": expiry, "at": at})
+            "underlying": underlying, "expiry": normalize_expiry_month(expiry), "at": at})
+
+    def expiries(self, underlying: str) -> dict:
+        """Upcoming valid chain expiry months (``YYYYMM``) for an underlying — so
+        you pass a real ``expiry`` to :meth:`chain` instead of guessing a date."""
+        return self.data_rest().get("/api/v1/expiries", {"underlying": underlying})
 
     def recordings(self, symbol: str) -> dict:
         """Which tick-history dates exist for a symbol (honest coverage)."""
