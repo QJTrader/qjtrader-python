@@ -1,6 +1,6 @@
 """Place a sandbox order and print the fill.
 
-    export QJ_CLIENT_ID=...  QJ_CLIENT_SECRET=...   # a sandbox key from console.qjtrader.ai
+    export QJ_CLIENT_ID=...  QJ_CLIENT_SECRET=...   # a sandbox key from gateway.qjtrader.ai
     python examples/quickstart_orders.py
 """
 import qjtrader

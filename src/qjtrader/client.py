@@ -15,7 +15,7 @@
 
 The same code runs against a **sandbox** or a **production** credential — the
 credential decides which, server-side. Get a free sandbox key (no approval) at
-https://console.qjtrader.ai.
+https://gateway.qjtrader.ai.
 """
 from __future__ import annotations
 
@@ -68,7 +68,7 @@ class Client:
             raise QJError(
                 "client_id/client_secret required — pass them to Client(...) or set "
                 "QJ_CLIENT_ID and QJ_CLIENT_SECRET. Get a free sandbox key at "
-                "https://console.qjtrader.ai"
+                "https://gateway.qjtrader.ai"
             )
         self._token_url = token_url or os.environ.get("QJ_TOKEN_URL") or DEFAULT_TOKEN_URL
         self._data_host = data_host or os.environ.get("QJ_DATA_HOST") or DEFAULT_DATA_HOST

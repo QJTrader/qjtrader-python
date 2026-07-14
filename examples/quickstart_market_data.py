@@ -1,6 +1,6 @@
 """Stream live (or, in the sandbox, simulated) market data.
 
-    export QJ_CLIENT_ID=...  QJ_CLIENT_SECRET=...   # a key from console.qjtrader.ai
+    export QJ_CLIENT_ID=...  QJ_CLIENT_SECRET=...   # a key from gateway.qjtrader.ai
     python examples/quickstart_market_data.py
 """
 import qjtrader

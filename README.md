@@ -8,7 +8,7 @@ lit exchange and dark pool) over one authenticated connection.
 pip install qjtrader
 ```
 
-- **Free sandbox, no approval.** Create an account at [console.qjtrader.ai](https://console.qjtrader.ai),
+- **Free sandbox, no approval.** Create an account at [gateway.qjtrader.ai](https://gateway.qjtrader.ai),
   click *Create sandbox credential*, and you get a `client_id` + `client_secret` that stream
   **simulated** data and return **simulated** fills — in the *exact production wire format*, 24/7.
 - **Sandbox → production with one credential swap.** Your code never changes; the credential decides
@@ -17,7 +17,7 @@ pip install qjtrader
 
 ## Quickstart
 
-Get a sandbox key from the [console](https://console.qjtrader.ai), then:
+Get a sandbox key from the [console](https://gateway.qjtrader.ai), then:
 
 ```bash
 export QJ_CLIENT_ID="your-client-id"
@@ -153,7 +153,7 @@ The console's "Connect your AI" panel generates this for you, pre-filled.
 ## Links
 
 - 📚 Docs: https://docs.qjtrader.ai/docs/ai
-- 🔑 Console (get a key): https://console.qjtrader.ai
+- 🔑 Console (get a key): https://gateway.qjtrader.ai
 - 🔤 Symbology: https://docs.qjtrader.ai/docs/ai/symbology
 - 🐛 Issues: https://github.com/QJTrader/qjtrader-python/issues
 
