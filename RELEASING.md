@@ -15,25 +15,31 @@ Publishing is automated: **push a version tag and GitHub Actions builds and uplo
 2. **Create the `pypi` environment** in the GitHub repo (*Settings → Environments → New
    environment → `pypi`*). Optionally add required reviewers so a human approves each release.
 
-## Current setup — scoped API token (active)
+## Current setup — OIDC Trusted Publishing (active, no stored secret)
 
-This repo currently publishes with a **scoped `PYPI_API_TOKEN` repo secret** (Settings → Secrets and
-variables → Actions), not OIDC. The workflow detects the secret and runs its "Publish (scoped API
-token)" step; the run log's "Select PyPI credential mode" step prints which credential was used.
-Nothing more is needed to cut a release — just push a tag.
+This repo publishes via **OIDC Trusted Publishing** — no API token is stored anywhere. The trusted
+publisher is registered on the PyPI project (table above), so pushing a tag is all it takes. Each
+release is uploaded with **PEP 740 digital attestations** (in-toto provenance), which appear in the
+*Provenance* section of the PyPI project page and cryptographically link every file to this repo +
+workflow. The run log's "Select PyPI credential mode" step prints `using OIDC Trusted Publishing`.
 
-- **Rotate** by generating a new **project-scoped** token at pypi.org (Account → API tokens → scope
-  it to `qjtrader`) and overwriting the `PYPI_API_TOKEN` secret. Never paste a token into chat, an
-  issue, or a commit — if one leaks, delete it on PyPI immediately and set a fresh one.
+> Note: attestations are attached **at upload time** and cannot be added retroactively. A version
+> that was already on PyPI when OIDC was enabled won't gain provenance — only newly uploaded
+> versions do.
 
-## Optional — switch to OIDC Trusted Publishing (no stored secret)
+## Emergency fallback — scoped API token
 
-If you'd rather store no secret, register the trusted publisher (table above) **on the existing
-project** — pypi.org → *Your projects* → `qjtrader` → *Manage* → *Publishing* → *Add a publisher*.
-Note: an account-level *pending* publisher only applies to projects that **don't exist yet**; since
-`qjtrader` already exists, a pending publisher is silently ignored — this is the usual reason OIDC
-"never works." Once the publisher is on the project, **delete the `PYPI_API_TOKEN` secret** and the
-workflow automatically switches to its "Publish (OIDC Trusted Publishing)" step.
+If OIDC ever breaks (e.g. the trusted publisher is deleted), publishing without a fix would stall.
+To unblock, add a **project-scoped** `PYPI_API_TOKEN` repo secret (Settings → Secrets and variables →
+Actions); the workflow detects it and switches to its "Publish (scoped API token)" step
+automatically. Remove the secret once OIDC is restored to return to attested, secret-free releases.
+Never paste a token into chat, an issue, or a commit — if one leaks, delete it on PyPI immediately.
+
+**Re-registering the trusted publisher** (if it's ever lost): pypi.org → *Your projects* →
+`qjtrader` → *Manage* → *Publishing* → *Add a publisher*. An account-level *pending* publisher only
+applies to projects that **don't exist yet**; since `qjtrader` already exists, add the publisher
+from the project's own *Publishing* page (a pending publisher would be silently ignored — the usual
+reason OIDC "never works").
 
 ## If Trusted Publishing fails (OIDC 403 / "not a trusted publisher")
 
