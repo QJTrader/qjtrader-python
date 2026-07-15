@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.1
+
+- **Direct venue routing.** `Orders.order(...)` (and the async `order_and_wait`) now takes an
+  optional `venue=` argument, and the CLI takes `--venue`, to route a Canadian equity order to a
+  specific venue or route instead of the account default. Every Canadian venue is addressable —
+  `TO`/`T`/`TX` (TSX), `V` (TSX Venture), `AL` (Alpha), `PT` (PURE/CSE), `OG` (Omega), `CH`
+  (Nasdaq CXC), `CX` (Nasdaq CX2), `CXD` (Nasdaq dark), `AQN` (NEO-N), `AQL` (NEO-L), `LY` (Lynx),
+  `TL`/`TLM` (MATCHNow dark) — plus the route selectors `SOR` (smart order router) and `DARK` (its
+  dark-only sweep). Equivalent to the `CA:RY.<venue>` symbol suffix; if both are given they must
+  agree. The value is upper-cased and forwarded — a bare symbol keeps using the account default.
+
 ## 0.4.0
 
 - **Broker-truth positions.** `Client.positions()` now documents and types (via the new
