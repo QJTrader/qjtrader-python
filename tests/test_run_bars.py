@@ -195,6 +195,66 @@ def test_restart_hydration_seeds_position_and_clears_stale_orders():
     assert cancels[0] >= 1                       # stale working orders cleared on start
 
 
+def test_restart_hydration_prefers_broker_total_over_fill_only():
+    """When the gateway exposes broker-truth positions_detail (real plane, oms-
+    positions-plan.md §3.4), hydration must seed TotalVolume = InitVolume + NetVolume,
+    not the fill-only net. A strategy that inherited a broker start-of-day position
+    would otherwise resume understated by exactly that InitVolume."""
+    stop = threading.Event()
+
+    class _MD:
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def subscribe(self, _s):
+            pass
+        def messages(self, timeout=None):
+            stop.set()
+            return iter(())
+
+    class _OE:
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def updates(self, timeout=None):
+            return iter(())
+        def cancel_all(self):
+            pass
+        def order(self, **_k):
+            pass
+        def cancel(self, _c):
+            pass
+        def replace(self, _c, **_k):
+            pass
+
+    class _Client:
+        def market_data(self):
+            return _MD()
+        def orders(self):
+            return _OE()
+        def positions(self):
+            # MX:X: broker short 2 + fill +1 => total -1 (fill-only would say +1).
+            # MX:W: no broker row => falls back to the fill-only net (+4).
+            return {
+                "positions": {"MX:X": 1, "MX:W": 4},
+                "positions_detail": {
+                    "MX:X": {"broker_qty": -2, "fill_qty": 1, "total_qty": -1},
+                },
+            }
+
+    seen = {}
+
+    class _Probe(Strategy):
+        def on_start(self, ctx):
+            seen["X"] = ctx.position("MX:X")
+            seen["W"] = ctx.position("MX:W")
+
+    run_strategy_live(_Client(), _Probe(), symbols=["MX:X"], stop=stop, reconnect=False)
+    assert seen == {"X": -1, "W": 4}   # broker total for X; fill-only fallback for W
+
+
 def test_run_reconnects_on_stream_drop():
     """A dropped stream must not kill a run: merge_streams ends (dead detection) and
     run_strategy_live re-opens the connection until stop is set. If reconnect or the

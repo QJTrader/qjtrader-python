@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0
+
+- **Broker-truth positions.** `Client.positions()` now documents and types (via the new
+  `PositionsEnvelope` / `PositionDetail` `TypedDict`s) the full `GET /api/v1/positions` surface:
+  the flat fill-only `positions` map (unchanged, back-compat) plus, on a real-plane credential
+  with the broker feed wired, `positions_detail` (`{broker_qty, fill_qty, total_qty}` per canonical
+  symbol — the desktop `TotalVolume = InitVolume + NetVolume`), `admserv_limits` (hard floor/ceiling
+  risk caps), `capital_required`, `broker_asof`/`broker_synced_at`, and the `orders_env` plane
+  (`sandbox`/`paper`/`shadow`/`real`). Simulated planes return a fill-only detail and omit the
+  broker/risk fields — that's by design, not a bug.
+- **Restart hydration seeds the broker total, not just today's fills.** `run_strategy_live`'s
+  reconnect hydration now prefers `positions_detail[sym].total_qty` when the gateway exposes it, so
+  a strategy that walked into the day holding a broker start-of-day position resumes from its true
+  `InitVolume + NetVolume` instead of understating by the broker half. Falls back to the fill-only
+  net for simulated planes / older gateways (never worse than before).
+
 ## 0.3.1
 
 - `Client.prove()` — one call runs the full sandbox proof: live quote → resting limit order

@@ -20,6 +20,7 @@ https://gateway.qjtrader.ai.
 from __future__ import annotations
 
 import os
+from typing import Any, Dict, Optional, TypedDict
 
 from .auth import TokenSource
 from .errors import QJError
@@ -41,6 +42,43 @@ DEFAULT_ORDERS_REST_PORT = 8443
 
 MARKET_DATA_SCOPE = "qj-data-feed/market-data"
 ORDERS_SCOPE = "qj-data-feed/orders"
+
+
+class PositionDetail(TypedDict, total=False):
+    """One canonical symbol's broker-truth split from ``positions_detail``.
+
+    ``total_qty = broker_qty + fill_qty`` — the desktop ``InitVolume + NetVolume``.
+    ``broker_qty`` is 0 on a simulated plane. ``price``/``currency``/``account``/
+    ``source`` are present only when a broker row backs the symbol.
+    """
+    broker_qty: int
+    fill_qty: int
+    total_qty: int
+    price: Optional[float]
+    currency: Optional[str]
+    account: Optional[str]
+    source: Optional[str]
+
+
+class PositionsEnvelope(TypedDict, total=False):
+    """Return shape of :meth:`Client.positions` (``GET /api/v1/positions``).
+
+    Always present: ``type``, ``user``, ``envelope`` (limit caps), ``positions``
+    (flat fill-only ``symbol -> net int``, back-compat), ``orders_env`` (plane).
+    Present only on a real plane with the broker feed wired: ``positions_detail``,
+    ``admserv_limits``, ``capital_required``, ``broker_asof``, ``broker_synced_at``.
+    """
+    type: str
+    user: str
+    envelope: Dict[str, Any]
+    positions: Dict[str, int]
+    tag_positions: Dict[str, int]
+    orders_env: Optional[str]
+    positions_detail: Dict[str, PositionDetail]
+    admserv_limits: Dict[str, Any]
+    capital_required: Dict[str, Any]
+    broker_asof: Optional[str]
+    broker_synced_at: Optional[str]
 
 
 class Client:
@@ -209,8 +247,25 @@ class Client:
         events = (self.events(limit=limit) or {}).get("events") or []
         return _diff(events, tag_a, tag_b)
 
-    def positions(self) -> dict:
-        """Agent-account envelope + live positions per symbol/strategy-tag (§10.5)."""
+    def positions(self) -> "PositionsEnvelope":
+        """Agent-account envelope + live positions per symbol/strategy-tag (§10.5).
+
+        Besides the envelope limits and the flat fill-only ``positions`` map (kept
+        for back-compat), on a **real**-plane credential with the broker feed wired
+        the response also carries the broker-truth split (oms-positions-plan.md
+        §3.4): ``positions_detail`` maps each canonical symbol to
+        ``{broker_qty, fill_qty, total_qty}`` — the desktop formula
+        ``TotalVolume = InitVolume (broker start-of-day) + NetVolume (today's fills)``
+        — plus ``admserv_limits`` (the hard floor/ceiling risk caps),
+        ``capital_required``, ``broker_asof`` and ``broker_synced_at``.
+
+        ``orders_env`` reports the credential's order plane
+        (``sandbox``/``paper``/``shadow``/``real``, or ``None`` on a legacy real
+        credential). On a **simulated** plane there is no broker book: the response
+        omits ``admserv_limits``/``capital_required``/``broker_asof`` and
+        ``positions_detail`` is fill-only (``broker_qty`` 0). Don't chase a
+        "missing broker data" bug for a sandbox credential — that's the design.
+        """
         return self.orders_rest().get("/api/v1/positions")
 
     def get_scenario(self) -> dict:

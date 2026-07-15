@@ -324,12 +324,23 @@ def _hydrate_context(client: Any, ctx: LiveContext) -> None:
     average cost isn't yet exposed by the gateway (see §12.1 journal attestation), so
     only the signed net is restored — which is what position/limit gating needs."""
     try:
-        pos = (client.positions() or {}).get("positions") or {}
+        env = client.positions() or {}
     except Exception:
-        pos = {}
+        env = {}
+    pos = env.get("positions") or {}
+    # Prefer the broker-truth TotalVolume (InitVolume + NetVolume) when the gateway
+    # exposes it (real plane, broker feed wired — oms-positions-plan.md §3.4): the
+    # flat `positions` map is fill-only, so hydrating from it alone would resume a
+    # strategy that inherited a broker start-of-day position understated by exactly
+    # that InitVolume — the "lying number" this whole path exists to avoid. Match by
+    # the strategy's own symbol against the canonical-keyed `positions_detail`; where
+    # they differ (some equity forms) or detail is absent (sim plane / older gateway)
+    # we fall back to the fill-only net, which is never worse than before.
+    detail = env.get("positions_detail") or {}
     for sym, net in pos.items():
+        drow = detail.get(sym)
         try:
-            n = int(net)
+            n = int(drow["total_qty"]) if drow and "total_qty" in drow else int(net)
         except (TypeError, ValueError):
             continue
         if n == 0:
