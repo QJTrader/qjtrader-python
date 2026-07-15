@@ -15,12 +15,25 @@ Publishing is automated: **push a version tag and GitHub Actions builds and uplo
 2. **Create the `pypi` environment** in the GitHub repo (*Settings → Environments → New
    environment → `pypi`*). Optionally add required reviewers so a human approves each release.
 
-That's it — no `PYPI_API_TOKEN` secret needed once the two steps above match **exactly** (a single
-character off — org case, workflow filename, environment name — makes PyPI reject the OIDC token).
+## Current setup — scoped API token (active)
 
-The publish step already reads `password: ${{ secrets.PYPI_API_TOKEN }}`. That input is a **safety
-net, not a requirement**: with no such secret it expands to an empty string and the action falls
-back to Trusted Publishing (OIDC). So OIDC is the default, and a token only kicks in if you add one.
+This repo currently publishes with a **scoped `PYPI_API_TOKEN` repo secret** (Settings → Secrets and
+variables → Actions), not OIDC. The workflow detects the secret and runs its "Publish (scoped API
+token)" step; the run log's "Select PyPI credential mode" step prints which credential was used.
+Nothing more is needed to cut a release — just push a tag.
+
+- **Rotate** by generating a new **project-scoped** token at pypi.org (Account → API tokens → scope
+  it to `qjtrader`) and overwriting the `PYPI_API_TOKEN` secret. Never paste a token into chat, an
+  issue, or a commit — if one leaks, delete it on PyPI immediately and set a fresh one.
+
+## Optional — switch to OIDC Trusted Publishing (no stored secret)
+
+If you'd rather store no secret, register the trusted publisher (table above) **on the existing
+project** — pypi.org → *Your projects* → `qjtrader` → *Manage* → *Publishing* → *Add a publisher*.
+Note: an account-level *pending* publisher only applies to projects that **don't exist yet**; since
+`qjtrader` already exists, a pending publisher is silently ignored — this is the usual reason OIDC
+"never works." Once the publisher is on the project, **delete the `PYPI_API_TOKEN` secret** and the
+workflow automatically switches to its "Publish (OIDC Trusted Publishing)" step.
 
 ## If Trusted Publishing fails (OIDC 403 / "not a trusted publisher")
 
