@@ -15,8 +15,30 @@ Publishing is automated: **push a version tag and GitHub Actions builds and uplo
 2. **Create the `pypi` environment** in the GitHub repo (*Settings → Environments → New
    environment → `pypi`*). Optionally add required reviewers so a human approves each release.
 
-That's it — no `PYPI_API_TOKEN` secret needed. (If you'd rather use a token, add it as the
-`PYPI_API_TOKEN` secret and set `with: password: ${{ secrets.PYPI_API_TOKEN }}` on the publish step.)
+That's it — no `PYPI_API_TOKEN` secret needed once the two steps above match **exactly** (a single
+character off — org case, workflow filename, environment name — makes PyPI reject the OIDC token).
+
+The publish step already reads `password: ${{ secrets.PYPI_API_TOKEN }}`. That input is a **safety
+net, not a requirement**: with no such secret it expands to an empty string and the action falls
+back to Trusted Publishing (OIDC). So OIDC is the default, and a token only kicks in if you add one.
+
+## If Trusted Publishing fails (OIDC 403 / "not a trusted publisher")
+
+This is almost always a **registration mismatch**, not a code problem — the workflow YAML is correct.
+Check, in order:
+
+1. **The pending/trusted publisher on PyPI matches the table above verbatim** — Owner `QJTrader`
+   (case-sensitive), Repository `qjtrader-python`, Workflow `publish.yml` (filename only, no path),
+   Environment `pypi`. Re-add it if the project already existed when you first tried to publish
+   (a *pending* publisher only applies to projects that don't exist yet).
+2. **The `pypi` GitHub environment exists** in *Settings → Environments*. If a required reviewer is
+   set, the run pauses for approval — that looks like a "stuck" publish, not a failure.
+3. **You pushed the tag to `QJTrader/qjtrader-python`** (not a fork) — OIDC is scoped to that repo.
+
+**Unblock immediately without solving OIDC:** add a project-scoped PyPI API token as the repo secret
+`PYPI_API_TOKEN` (*Settings → Secrets and variables → Actions*), then re-run the workflow (it has a
+`workflow_dispatch` trigger, so you don't need a new tag). The publish step uses the token
+automatically. Remove the secret later once OIDC is fixed to return to no-stored-secret publishing.
 
 ## Cutting a release
 
