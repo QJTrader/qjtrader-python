@@ -1,5 +1,9 @@
 # qjtrader
 
+[![PyPI version](https://img.shields.io/pypi/v/qjtrader)](https://pypi.org/project/qjtrader/)
+[![Python versions](https://img.shields.io/pypi/pyversions/qjtrader)](https://pypi.org/project/qjtrader/)
+[![License](https://img.shields.io/pypi/l/qjtrader)](https://github.com/QJTrader/qjtrader-python/blob/main/LICENSE)
+
 Official Python client for the **QJ Trader AI Trading APIs** — stream real-time Canadian market
 data and send orders to Canadian venues (Montréal Exchange derivatives, and equities across every
 lit exchange and dark pool) over one authenticated connection.
@@ -14,6 +18,9 @@ pip install qjtrader
 - **Sandbox → production with one credential swap.** Your code never changes; the credential decides
   sandbox vs. real, server-side.
 - **Stdlib only.** No dependencies — easy to install, easy to audit.
+- **Verifiable releases.** Published straight from this repo via [PyPI Trusted
+  Publishing](https://docs.pypi.org/trusted-publishers/) with signed [PEP 740](https://peps.python.org/pep-0740/)
+  provenance — no manual uploads, no stored tokens. See [SECURITY.md](SECURITY.md) to verify a release.
 
 ## Quickstart
 
