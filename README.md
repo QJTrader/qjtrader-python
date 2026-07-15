@@ -1,5 +1,7 @@
 # qjtrader
 
+Hosted assistants should use the delegated OAuth connector from [QJ Gateway](https://gateway.qjtrader.ai), which keeps the trading client secret out of chat. This SDK remains the full programmatic client for Python services and local agents.
+
 [![PyPI version](https://img.shields.io/pypi/v/qjtrader)](https://pypi.org/project/qjtrader/)
 [![Python versions](https://img.shields.io/pypi/pyversions/qjtrader)](https://pypi.org/project/qjtrader/)
 [![License](https://img.shields.io/pypi/l/qjtrader)](https://github.com/QJTrader/qjtrader-python/blob/main/LICENSE)
