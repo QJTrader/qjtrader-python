@@ -10,6 +10,21 @@ from typing import Iterable
 from ._stream import _Stream
 
 
+def top_of_book(message: dict) -> dict:
+    """Normalize either a quote or L2 snapshot to one stable touch shape."""
+    data = message.get("data") or {}
+    bids = data.get("bids") or []
+    asks = data.get("asks") or []
+    return {
+        "symbol": message.get("symbol"),
+        "bid": data.get("bid", bids[0].get("price") if bids else None),
+        "ask": data.get("ask", asks[0].get("price") if asks else None),
+        "bid_size": data.get("bid_size", bids[0].get("size") if bids else None),
+        "ask_size": data.get("ask_size", asks[0].get("size") if asks else None),
+        "source_type": message.get("type"),
+    }
+
+
 class MarketData(_Stream):
     """A live market-data connection. Obtain one from :meth:`qjtrader.Client.market_data`."""
 
@@ -29,3 +44,13 @@ class MarketData(_Stream):
 
     def ping(self) -> None:
         self.send({"action": "ping"})
+
+    def quote(self, symbol: str, timeout: float = 10.0) -> dict:
+        """Subscribe and return a normalized top-of-book from quote or snapshot."""
+        self.subscribe([symbol], depth=1)
+        for msg in self.messages(timeout=timeout):
+            if msg.get("symbol") == symbol and msg.get("type") in (
+                    "quote", "snapshot", "level2"):
+                return top_of_book(msg)
+        return {"symbol": symbol, "bid": None, "ask": None,
+                "bid_size": None, "ask_size": None, "source_type": "timeout"}

@@ -132,6 +132,11 @@ class Client:
         return self.data_rest().get("/api/v1/stats", {
             "symbol": symbol, "interval": interval, "window": window})
 
+    def quote(self, symbol: str, timeout: float = 10.0) -> dict:
+        """Return a normalized live top-of-book without hand-parsing snapshots."""
+        with self.market_data() as md:
+            return md.quote(symbol, timeout=timeout)
+
     def chain(self, underlying: str, expiry: str, at=None) -> dict:
         """Options chain snapshot for an ``underlying`` at a given ``expiry``.
 
