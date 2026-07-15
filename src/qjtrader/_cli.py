@@ -57,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     po.add_argument("--account", default="")
     po.add_argument("--iceberg", type=int, default=0)
     po.add_argument("--cid")
+    po.add_argument("--venue", help="Canadian equity route, e.g. TO, PT, LY, TL, SOR, DARK")
     po.add_argument("--watch", type=float, default=15.0)
     _common(po)
 
@@ -107,7 +108,8 @@ def main(argv: list[str] | None = None) -> int:
             with client.orders() as oe:
                 print(f"# authenticated as {oe.user}", file=sys.stderr)
                 cid = oe.order(sym=a.sym, side=a.side, qty=a.qty, price=a.price,
-                               tif=a.tif, account=a.account, iceberg=a.iceberg, cid=a.cid)
+                               tif=a.tif, account=a.account, iceberg=a.iceberg, cid=a.cid,
+                               venue=a.venue)
                 print(f"# submitted cid={cid}", file=sys.stderr)
                 _drain(oe, a.watch)
         elif a.cmd == "cancel":

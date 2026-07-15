@@ -25,18 +25,24 @@ class Orders(_Stream):
 
     def order(self, *, sym: str, side: str, qty: int, price: float,
               account: str = "", tif: str = "day", iceberg: int = 0,
-              cid: str | None = None) -> str:
+              cid: str | None = None, venue: str | None = None) -> str:
         """Submit a limit order. Returns the ``cid`` (generated if not given).
 
         ``side``: ``"buy"``/``"sell"``. ``tif``: ``"day"``/``"ioc"``/``"fok"``.
+        ``venue`` uses the desktop QJ exchange suffix vocabulary (for example
+        ``TO``, ``PT``, ``LY``, or ``TL``); ``SOR`` and ``DARK`` are cloud
+        route selectors. A venue suffix on ``sym`` remains supported.
         Iterate :meth:`updates` to receive acks and fills.
         """
         cid = cid or _new_cid()
-        self.send({
+        msg: dict[str, Any] = {
             "action": "order", "cid": cid, "sym": sym, "side": side, "qty": qty,
             "type": "limit", "price": price, "tif": tif, "account": account,
             "iceberg": iceberg,
-        })
+        }
+        if venue:
+            msg["venue"] = venue.upper()
+        self.send(msg)
         return cid
 
     def cancel(self, orig_cid: str, cid: str | None = None) -> str:
