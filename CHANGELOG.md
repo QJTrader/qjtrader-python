@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1
+
+- `Client.prove()` — one call runs the full sandbox proof: live quote → resting limit order
+  (priced safely below the bid so it never crosses) → cancel → journal, returning a structured
+  `{quote, cid, cancel_cid, lifecycle, journal}` result. The three "proving steps" from the
+  onboarding brief are now a single method instead of a hand-rolled loop.
+- `Client.chain_stats()` — OI concentration, volume, put/call ratio and IV-skew digest for an
+  options chain (`/api/v1/chain/stats`), with the same forgiving `YYYYMM` expiry normalization
+  as `chain()`.
+
 ## 0.1.0 (unreleased)
 
 Initial release.

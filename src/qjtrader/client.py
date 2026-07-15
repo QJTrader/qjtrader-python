@@ -150,6 +150,12 @@ class Client:
         return self.data_rest().get("/api/v1/chain", {
             "underlying": underlying, "expiry": normalize_expiry_month(expiry), "at": at})
 
+    def chain_stats(self, underlying: str, expiry: str, at=None) -> dict:
+        """OI concentration, volume, put/call ratio and IV-skew digest."""
+        from .calendar import normalize_expiry_month
+        return self.data_rest().get("/api/v1/chain/stats", {
+            "underlying": underlying, "expiry": normalize_expiry_month(expiry), "at": at})
+
     def expiries(self, underlying: str) -> dict:
         """Upcoming valid chain expiry months (``YYYYMM``) for an underlying — so
         you pass a real ``expiry`` to :meth:`chain` instead of guessing a date."""
@@ -162,6 +168,33 @@ class Client:
     def events(self, since=None, limit: int = 200) -> dict:
         """Cross-order journal history (blotter/replay/post-trade analysis)."""
         return self.orders_rest().get("/api/v1/events", {"since": since, "limit": limit})
+
+    def prove(self, symbol: str = "CA:RY", *, account: str = "SIM",
+              timeout: float = 10.0) -> dict:
+        """Run quote → resting order → cancel → journal as one sandbox proof."""
+        quote = self.quote(symbol, timeout=timeout)
+        bid = quote.get("bid")
+        if bid is None:
+            raise QJError(f"no bid received for {symbol}")
+        price = round(float(bid) * .85, 2)
+        lifecycle = []
+        with self.orders() as oe:
+            cid = oe.order(sym=symbol, side="buy", qty=1, price=price, account=account)
+            for msg in oe.updates(timeout=timeout):
+                if msg.get("cid") == cid:
+                    lifecycle.append(msg)
+                    if msg.get("status") == "new":
+                        break
+            cancel_cid = oe.cancel(cid)
+            for msg in oe.updates(timeout=timeout):
+                if msg.get("cid") == cid or msg.get("orig_cid") == cid:
+                    lifecycle.append(msg)
+                    if msg.get("status") == "canceled":
+                        break
+        journal = self.events(limit=50)
+        return {"symbol": symbol, "quote": quote, "cid": cid,
+                "cancel_cid": cancel_cid, "lifecycle": lifecycle,
+                "journal": [e for e in journal.get("events", []) if e.get("cid") == cid]}
 
     def order_snapshot(self) -> dict:
         """Open orders + session state on this credential (read-only)."""
