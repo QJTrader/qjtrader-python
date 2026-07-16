@@ -6,8 +6,8 @@ Hosted assistants should use the delegated OAuth connector from [QJ Gateway](htt
 [![Python versions](https://img.shields.io/pypi/pyversions/qjtrader)](https://pypi.org/project/qjtrader/)
 [![License](https://img.shields.io/pypi/l/qjtrader)](https://github.com/QJTrader/qjtrader-python/blob/main/LICENSE)
 
-Official Python client for the **QJ Trader AI Trading APIs** — stream real-time Canadian market
-data and send orders to Canadian venues (Montréal Exchange derivatives, and equities across every
+Official Python client for the **QJ Trader AI Trading APIs** — stream real-time Canadian and selected
+US market data and send orders through entitled Canadian or US gateway accounts (Montréal Exchange derivatives, and equities across every
 lit exchange and dark pool) over one authenticated connection.
 
 ```bash
@@ -75,6 +75,21 @@ with client.market_data() as md:
 - `CA:RY` is the **consolidated** Canadian equity book (each level tagged with its venue);
   `CA:RY.PT` is **PURE (CSE)** only. Futures like `MX:CRAU26` are venue-native. See the full
   [symbology reference](https://docs.qjtrader.ai/docs/ai/symbology).
+
+### Check what is available
+
+Coverage differs by product and entitlement, especially for US depth. The offline matrix requires
+no credential or network connection:
+
+```python
+from qjtrader import market_availability
+
+print(market_availability()["markets"]["US"])
+```
+
+Verified examples include AAPL L1, SPY L1/L2, and selected US futures L1/L2. AAPL depth, NDX,
+and US listed-option depth are not currently available. See
+[Market Availability](https://docs.qjtrader.ai/docs/ai/availability).
 
 ## Command line
 
