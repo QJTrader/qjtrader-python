@@ -17,3 +17,5 @@ def test_availability_is_product_and_environment_specific():
     assert "symbol-dependent" in out["products"]["us_equity_etf"]["production"]["data"]
     assert "unavailable" in out["products"]["tsx_index"]["production"]["data"]
     assert out["products"]["forex"]["symbol"] is None
+    assert "null prices" in out["observation_contract"]["unquoted"]
+    assert "source-dependent" in out["data_shapes"]["derivative_book"]

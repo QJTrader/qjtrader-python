@@ -8,6 +8,7 @@ from qjtrader.universe import describe_instrument, product_key, search_symbols
 
 @pytest.mark.parametrize(("symbol", "key"), [
     ("CA:RY", "ca_equity"),
+    ("CA:XIU", "ca_etf"),
     ("MX:CGBU26", "mx_future"),
     ("MX:CRAH27CRAU27", "mx_strategy"),
     ("MX:RY26AUG142.5C21", "mx_option"),
@@ -22,6 +23,8 @@ def test_describe_is_authority_aware():
     d = describe_instrument("CA:RY", data_environment="real", orders_environment="canary")
     assert d["plain_name"] == "Canadian common share"
     assert d["can_reach_exchange"] is True
+    assert "price-aggregated" in d["data_shape"]
+    assert "unquoted" in d["observation_contract"]
 
 
 def test_search_filters_and_bounds():

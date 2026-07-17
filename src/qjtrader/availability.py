@@ -10,7 +10,7 @@ from typing import Any
 
 
 _AVAILABILITY: dict[str, Any] = {
-    "as_of": "2026-07-16",
+    "as_of": "2026-07-17",
     "reference": "https://docs.qjtrader.ai/docs/ai/availability",
     "access_note": (
         "Sandbox access is self-serve. Live data and production order entry "
@@ -21,8 +21,21 @@ _AVAILABILITY: dict[str, Any] = {
         "production": "Real data and orders are independently permissioned by market, product, account and route. A quote never implies order authority or L2 availability.",
         "recommended_check": "Read the product's sandbox and production fields, then session_info for this credential.",
     },
+    "observation_contract": {
+        "aggregated_book": "snapshot.data.bids/asks contain price and size; orders/venues are optional source detail, not guaranteed fields",
+        "summary_quote": "quote.data can add last, change, fractional percent_change, volume, high, low and source",
+        "unquoted": "a valid subscription can return null prices or remain quiet; this means unquoted now, not price zero",
+        "history": "OHLC values are positive prices or null; zero-price upstream sentinels are discarded",
+        "honesty_rule": "render only fields present; never infer Greeks, terms, NAV, depth, or order authority from security type",
+    },
+    "data_shapes": {
+        "equity_book": "price-aggregated depth; venue contributions may be present, while sparse listings can be one-sided or one level",
+        "derivative_book": "price/size depth; venue and order-count fields are source-dependent",
+        "option_quote": "top-of-book or unquoted state; chain analytics are separate and may be absent in production",
+        "package_quote": "episodic package quote; leg prices and exchange ratios must not be assumed",
+    },
     "products": {
-        "ca_equity": {"plain_name": "Canadian common share", "symbol": "CA:RY", "sandbox": {"data": "synthetic L1 + five-level venue-shaped L2", "orders": "simulated"}, "production": {"data": "L1 + official CBBO + all lit-venue L2", "orders": "lit, dark and smart routes; entitled accounts"}},
+        "ca_equity": {"plain_name": "Canadian common share", "symbol": "CA:RY", "sandbox": {"data": "synthetic L1 + five-level venue-shaped L2", "orders": "simulated"}, "production": {"data": "official CBBO + five-level price-aggregated consolidated or venue L2 (not order-by-order D4)", "orders": "lit, dark and smart routes; entitled accounts"}},
         "ca_etf": {"plain_name": "Canadian exchange-traded fund", "symbol": "CA:XIU", "sandbox": {"data": "synthetic L1/L2", "orders": "simulated"}, "production": {"data": "equity feed contract", "orders": "equity routes; entitled accounts"}},
         "ca_preferred": {"plain_name": "Canadian preferred share", "symbol": "CA:ENB PR A", "sandbox": {"data": "synthetic income-like behaviour + L1/L2", "orders": "simulated"}, "production": {"data": "equity L1/L2; terms/fundamentals not supplied", "orders": "equity routes; entitled accounts"}},
         "ca_warrant_right_unit": {"plain_name": "Canadian warrant, right or unit", "symbol": "CA:AAB WT", "sandbox": {"data": "synthetic thin/wide L1/L2", "orders": "simulated"}, "production": {"data": "equity L1/L2 when active; contract terms not supplied", "orders": "equity routes; entitled accounts"}},
@@ -41,10 +54,14 @@ _AVAILABILITY: dict[str, Any] = {
         "CA": {
             "sandbox": "Synthetic L1/L2 and simulated orders for stock-like listings",
             "instruments": "Canadian equities, ETFs and stock-like listings",
-            "market_data": "L1 and consolidated/per-venue L2; official CBBO",
+            "market_data": "Official CBBO and five-level price-aggregated consolidated/per-venue L2",
             "orders": "Available across supported lit, dark and smart routes",
             "examples": ["CA:RY", "CA:RY.PT"],
-            "limitations": ["TSX index values are not currently available"],
+            "limitations": [
+                "Only quote messages with cbbo=true are the official consolidated touch",
+                "External L2 is price-aggregated and currently capped at five levels; it does not include order IDs or D4 add/execute actions",
+                "TSX index values are not currently available",
+            ],
         },
         "MX": {
             "sandbox": "Synthetic futures/options/strategies, chains and simulated orders",

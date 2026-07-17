@@ -7,6 +7,14 @@ from typing import Any
 from .availability import market_availability
 
 _MONTH = r"[FGHJKMNQUVXZ]\d{2}"
+_SHAPE_BY_PRODUCT = {
+    "ca_equity": "equity_book", "ca_etf": "equity_book",
+    "ca_preferred": "equity_book", "ca_warrant_right_unit": "equity_book",
+    "mx_future": "derivative_book", "us_future": "derivative_book",
+    "us_equity_etf": "equity_book", "mx_option": "option_quote",
+    "mx_future_option": "option_quote", "us_listed_option": "option_quote",
+    "mx_strategy": "package_quote",
+}
 
 
 def product_key(symbol: str) -> str:
@@ -17,6 +25,8 @@ def product_key(symbol: str) -> str:
             return "ca_preferred"
         if re.search(r" (WT|RT|UN)(\.|$)", body):
             return "ca_warrant_right_unit"
+        if re.match(r"^(XIU|XIC|ZAG|VFV|XEG|ZCN|ZSP|VCN|HXT|XSP)(\.|$)", body):
+            return "ca_etf"
         return "ca_equity"
     if sym.startswith("US:"):
         if body.startswith("@"):
@@ -39,6 +49,7 @@ def describe_instrument(symbol: str, *, data_environment: str | None = None,
     key = product_key(symbol)
     availability = market_availability()
     product = availability["products"].get(key, {})
+    shape_key = _SHAPE_BY_PRODUCT.get(key)
     order_env = (orders_environment or "unknown").lower()
     return {
         "symbol": symbol,
@@ -50,6 +61,8 @@ def describe_instrument(symbol: str, *, data_environment: str | None = None,
         "can_reach_exchange": order_env in {"canary", "live", "real"},
         "sandbox": product.get("sandbox"),
         "production": product.get("production"),
+        "data_shape": availability["data_shapes"].get(shape_key) if shape_key else None,
+        "observation_contract": availability["observation_contract"],
         "availability_reference": availability["reference"],
     }
 
