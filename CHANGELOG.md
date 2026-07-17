@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.3
+
+- Added source-aware `data_shapes` and an explicit `observation_contract` to market availability.
+- `describe_instrument()` now explains the expected payload shape and preserves sparse or
+  null-priced observations as unquoted rather than treating them as zero.
+- Canadian ETF discovery now distinguishes supported ETF examples from common shares.
+
 ## 0.5.2
 
 - Corrected the published onboarding description: QJ promotes licensed data and order authority
