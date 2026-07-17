@@ -10,7 +10,7 @@ client = qjtrader.Client()
 with client.market_data() as md:
     print(f"authenticated as {md.user}")
     # Consolidated (CA:RY), one-venue (CA:RY.PT — PURE/CSE), and a future.
-    md.subscribe(["CA:RY", "CA:RY.PT", "MX:CRAU26"], depth=5)
+    md.subscribe(["CA:RY", "CA:RY.PT", "MX:CRAU26", "US:@ESU26"], depth=5)
     for msg in md.messages(timeout=30):
         t = msg.get("type")
         if t in ("snapshot", "quote"):

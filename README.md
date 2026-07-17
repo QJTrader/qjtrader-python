@@ -66,14 +66,15 @@ import qjtrader
 client = qjtrader.Client()
 
 with client.market_data() as md:
-    md.subscribe(["CA:RY", "CA:RY.PT", "MX:CRAU26"], depth=5)
+    md.subscribe(["CA:RY", "CA:RY.PT", "MX:CRAU26", "US:@ESU26"], depth=5)
     for msg in md.messages(timeout=30):
         if msg["type"] == "quote":
             print(msg["symbol"], msg["data"]["bid"], msg["data"]["ask"])
 ```
 
 - `CA:RY` is the **consolidated** Canadian equity book (each level tagged with its venue);
-  `CA:RY.PT` is **PURE (CSE)** only. Futures like `MX:CRAU26` are venue-native. See the full
+  `CA:RY.PT` is **PURE (CSE)** only. Futures like `MX:CRAU26` and selected US contracts such as
+  `US:@ESU26` are venue-native. Production access remains product- and entitlement-specific. See the full
   [symbology reference](https://docs.qjtrader.ai/docs/ai/symbology).
 
 ### Check what is available
@@ -96,7 +97,7 @@ and US listed-option depth are not currently available. See
 The package installs a `qjtrader` command:
 
 ```bash
-qjtrader subscribe CA:RY MX:CRAU26 --watch 30
+qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30
 qjtrader order --sym MX:CRAU26 --side buy --qty 1 --price 97.00 --account SIM --tif ioc
 qjtrader status
 qjtrader cancel --orig qj-abc123
@@ -147,9 +148,8 @@ Tokens are minted for you (OAuth2 client-credentials) and refreshed automaticall
 expire — you never handle them directly. Need a raw token (e.g. for the WebSocket interface)?
 `client.token(qjtrader.MARKET_DATA_SCOPE)`.
 
-> **Pilot note:** while order entry is in private pilot it may be reached by IP with a pinned
-> certificate provided at onboarding — pass `ca_file="pilot-server.pem"` (or `QJ_CA_FILE`). Market
-> data uses a standard public certificate.
+Both public API hosts use standard public-certificate validation. `QJ_CA_FILE` remains available
+for controlled private deployments but is not required for the hosted QJ Gateway services.
 
 ## How it works
 

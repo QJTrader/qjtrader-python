@@ -3,7 +3,7 @@
 Credentials come from QJ_CLIENT_ID / QJ_CLIENT_SECRET (or --client-id/--secret).
 
     export QJ_CLIENT_ID=... QJ_CLIENT_SECRET=...
-    qjtrader subscribe CA:RY MX:CRAU26 --watch 30
+    qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30
     qjtrader order --sym MX:CRAU26 --side buy --qty 1 --price 97.00 --account SIM --tif ioc
     qjtrader status
 """
@@ -43,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     ps = sub.add_parser("subscribe", help="stream market data for symbols")
-    ps.add_argument("symbols", nargs="+", help="e.g. CA:RY CA:RY.PT MX:CRAU26")
+    ps.add_argument("symbols", nargs="+", help="e.g. CA:RY MX:CRAU26 US:@ESU26")
     ps.add_argument("--depth", type=int)
     ps.add_argument("--watch", type=float, default=60.0)
     _common(ps)

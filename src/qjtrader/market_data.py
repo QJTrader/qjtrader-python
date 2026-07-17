@@ -29,7 +29,7 @@ class MarketData(_Stream):
     """A live market-data connection. Obtain one from :meth:`qjtrader.Client.market_data`."""
 
     def subscribe(self, symbols: Iterable[str], depth: int | None = None) -> None:
-        """Subscribe to namespaced symbols, e.g. ``["CA:RY", "CA:RY.PT", "MX:CRAU26"]``.
+        """Subscribe to namespaced symbols, e.g. ``["CA:RY", "MX:CRAU26", "US:@ESU26"]``.
 
         A bare equity symbol (``CA:RY``) is the consolidated book; add a venue
         code (``CA:RY.PT``) for one exchange. ``depth`` sets Level-2 price levels.

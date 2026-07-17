@@ -4,7 +4,7 @@
     client = qjtrader.Client()          # reads QJ_CLIENT_ID / QJ_CLIENT_SECRET from env
 
     with client.market_data() as md:
-        md.subscribe(["CA:RY", "MX:CRAU26"])
+        md.subscribe(["CA:RY", "MX:CRAU26", "US:@ESU26"])
         for msg in md.messages(timeout=30):
             print(msg["type"], msg.get("symbol"))
 

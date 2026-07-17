@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.3
+
+- **Product-level availability.** `market_availability()` now separates sandbox and production
+  data/order support for Canadian cash listings, MX futures/options/strategies, US equities/ETFs,
+  US listed options, selected US futures, and explicitly unavailable cloud products.
+- **Cross-market examples.** Quickstarts and API documentation now demonstrate `CA:`, `MX:`, and
+  `US:` symbols and explain that market data, L2, accounts, routes, and order authority are separate.
+- Removed the obsolete private-pilot/pinned-certificate deployment note; the public hosts use
+  standard certificate validation.
+
 ## 0.4.1
 
 - **Direct venue routing.** `Orders.order(...)` (and the async `order_and_wait`) now takes an
