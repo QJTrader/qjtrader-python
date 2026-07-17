@@ -151,14 +151,21 @@ class Client:
         the authority.
         """
         info: dict[str, Any] = {"credential": self._client_id}
-        with self.market_data() as md:
-            info["authenticated_user"] = md.user
-            info["data_environment"] = md.environment
-            info["data_session"] = dict(md.auth_info)
-        with self.orders() as oe:
-            info["orders_environment"] = oe.environment
-            info["authority_version"] = oe.authority_version
-            info["orders_session"] = dict(oe.auth_info)
+        try:
+            with self.market_data() as md:
+                info["authenticated_user"] = md.user
+                info["data_environment"] = md.environment
+                info["data_session"] = dict(md.auth_info)
+        except QJError as exc:
+            info["data_error"] = str(exc)
+        try:
+            with self.orders() as oe:
+                info.setdefault("authenticated_user", oe.user)
+                info["orders_environment"] = oe.environment
+                info["authority_version"] = oe.authority_version
+                info["orders_session"] = dict(oe.auth_info)
+        except QJError as exc:
+            info["orders_error"] = str(exc)
         return info
 
     def search_universe(self, query: str = "", limit: int = 50) -> dict[str, Any]:

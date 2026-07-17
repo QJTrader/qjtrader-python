@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- `Client.session_info()` now probes data and order authority independently, so credentials with
+  only one granted scope still report that plane while returning a plain error for the other.
+
 ## 0.5.0
 
 - **Server-authoritative sessions.** `Client.session_info()` reports the data and order

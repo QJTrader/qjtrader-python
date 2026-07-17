@@ -111,3 +111,24 @@ def test_client_session_info_uses_both_server_handshakes(monkeypatch):
     assert info["data_environment"] == "real"
     assert info["orders_environment"] == "paper"
     assert info["authority_version"] == "v9"
+
+
+def test_client_session_info_reports_planes_independently(monkeypatch):
+    monkeypatch.setenv("QJ_CLIENT_ID", "cid")
+    monkeypatch.setenv("QJ_CLIENT_SECRET", "sec")
+    c = qjtrader.Client()
+
+    class OrdersPlane:
+        user = "cid"
+        environment = "canary"
+        authority_version = "v10"
+        auth_info = {"type": "auth_success", "environment": "canary"}
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+
+    monkeypatch.setattr(c, "market_data", lambda: (_ for _ in ()).throw(QJError("scope unavailable")))
+    monkeypatch.setattr(c, "orders", lambda: OrdersPlane())
+    info = c.session_info()
+    assert info["data_error"] == "scope unavailable"
+    assert info["orders_environment"] == "canary"
+    assert info["authority_version"] == "v10"
