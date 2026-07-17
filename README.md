@@ -97,6 +97,7 @@ and US listed-option depth are not currently available. See
 The package installs a `qjtrader` command:
 
 ```bash
+qjtrader init my-strategy --symbol MX:CRAU26
 qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30
 qjtrader order --sym MX:CRAU26 --side buy --qty 1 --price 97.00 --account SIM --tif ioc
 qjtrader status
@@ -106,6 +107,10 @@ qjtrader cancel --orig qj-abc123
 qjtrader backtest examples/strategy_meanreversion.py --symbol MX:CRAU26 --bars 200
 qjtrader run       examples/strategy_meanreversion.py --symbols MX:CRAU26 --tag mr1
 ```
+
+`qjtrader init` creates a small local project that observes by default and keeps order mutation
+disabled until the user deliberately changes `allow_orders`. It is designed for a coding agent to
+inspect, test, and run locally without adding a cloud IDE or another account-setup step.
 
 ## Strategies — one contract, every venue
 
@@ -147,6 +152,10 @@ The bar-level backtester is for **logic**; L2 event-replay with queue-model fill
 Tokens are minted for you (OAuth2 client-credentials) and refreshed automatically before they
 expire — you never handle them directly. Need a raw token (e.g. for the WebSocket interface)?
 `client.token(qjtrader.MARKET_DATA_SCOPE)`.
+
+Use `client.session_info()` when a local agent needs the Gateway's authoritative data and order
+environments. `client.search_universe()` and `client.describe_instrument(symbol)` provide small,
+machine-readable discovery helpers so code does not have to infer product identity from prose.
 
 Both public API hosts use standard public-certificate validation. `QJ_CA_FILE` remains available
 for controlled private deployments but is not required for the hosted QJ Gateway services.

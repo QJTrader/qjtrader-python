@@ -42,6 +42,10 @@ class MarketData(_Stream):
     def unsubscribe(self, symbols: Iterable[str]) -> None:
         self.send({"action": "unsubscribe", "symbols": list(symbols)})
 
+    def identify(self, tag: str) -> None:
+        """Publish a metadata-only peer identity to observing Gateway sessions."""
+        self.send({"action": "hello", "tag": tag[:512]})
+
     def ping(self) -> None:
         self.send({"action": "ping"})
 

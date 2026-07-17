@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0
+
+- **Server-authoritative sessions.** `Client.session_info()` reports the data and order
+  environments returned by authenticated Gateway handshakes, including the order authority version.
+- **Agent-friendly universe.** `search_universe()` and `describe_instrument()` provide compact,
+  machine-readable discovery without requiring an agent to infer the symbol grammar from prose.
+- **Safe local strategy start.** `qjtrader init` creates a tested, observation-first local project;
+  live runners announce strategy, version, run, agent, and session identity when the feed supports it.
+
 ## 0.4.3
 
 - **Product-level availability.** `market_availability()` now separates sandbox and production

@@ -19,6 +19,8 @@ import inspect
 import json
 import queue
 import threading
+import os
+import uuid
 import time
 from typing import Any, Iterable, Iterator
 
@@ -362,7 +364,9 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
                       stop: threading.Event | None = None,
                       reconnect: bool = True,
                       reconnect_backoff_s: float = 3.0,
-                      hydrate: bool = True) -> None:
+                      hydrate: bool = True,
+                      run_id: str | None = None,
+                      agent_id: str | None = None) -> None:
     """Run a strategy against a live/paper credential (rung 3).
 
     `strategy` may be a Strategy instance or a path to a .py file. Opens market
@@ -383,12 +387,19 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
     # all scope to the exact version — promotion is granted to a version, not a name.
     version = strategy_version(strategy, params)
     versioned_tag = f"{strategy_tag}.{version}"
+    run_id = run_id or f"local-{uuid.uuid4().hex[:10]}"
+    agent_id = agent_id or os.environ.get("QJ_AGENT_ID") or "qjtrader-python"
+    session_id = uuid.uuid4().hex[:12]
     # Synthesize bars from the live tick stream so bar-driven strategies run here
     # exactly as in the backtest (§10.1). `bar_interval_s` param overrides; 0 = off.
     bar_interval = float(params.get("bar_interval_s", 5.0))
     while not stop.is_set():
         try:
             with client.market_data() as md, client.orders() as oe:
+                identify = getattr(md, "identify", None)
+                if callable(identify):
+                    identify("|".join(["qj-run", "strategy_run", "reading",
+                                       strategy_tag, version, run_id, agent_id, session_id]))
                 md.subscribe(symbols)
                 ctx = LiveContext(oe, strategy_tag=versioned_tag, account=account)
                 ctx.params = params

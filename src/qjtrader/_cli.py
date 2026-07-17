@@ -42,6 +42,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--version", action="version", version=f"qjtrader {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
+    pi = sub.add_parser("init", help="create one safe local strategy project")
+    pi.add_argument("path", nargs="?", default="qj-strategy")
+    pi.add_argument("--symbol", default="CA:RY")
+    pi.add_argument("--force", action="store_true")
+
     ps = sub.add_parser("subscribe", help="stream market data for symbols")
     ps.add_argument("symbols", nargs="+", help="e.g. CA:RY MX:CRAU26 US:@ESU26")
     ps.add_argument("--depth", type=int)
@@ -89,6 +94,15 @@ def main(argv: list[str] | None = None) -> int:
     _common(pr)
 
     a = p.parse_args(argv)
+    if a.cmd == "init":
+        from .scaffold import create_strategy_project
+        try:
+            files = create_strategy_project(a.path, symbol=a.symbol, force=a.force)
+        except (OSError, FileExistsError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        print(json.dumps({"created": files, "next": f"qjtrader backtest {a.path}/strategy.py --symbol {a.symbol}"}, indent=2))
+        return 0
     if a.cmd == "backtest":
         return _cmd_backtest(a)
     if a.cmd == "run":

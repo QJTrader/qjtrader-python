@@ -35,6 +35,8 @@ from .run import LiveContext, Supervisor, load_strategy, run_strategy_live
 from .runner import RunRegistry
 from .runner_service import RunnerService
 from .strategy import Context, PositionBook, Strategy
+from .scaffold import create_strategy_project
+from .universe import describe_instrument, product_key, search_symbols
 
 __all__ = [
     "Client",
@@ -73,5 +75,9 @@ __all__ = [
     "make_auto_tool",
     "AUTO_TOOLS",
     "market_availability",
+    "describe_instrument",
+    "search_symbols",
+    "product_key",
+    "create_strategy_project",
     "__version__",
 ]

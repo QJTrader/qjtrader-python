@@ -142,6 +142,52 @@ class Client:
         """Mint a raw access token for a scope (handy for the WebSocket/REST paths)."""
         return self._token_source(scope).token()
 
+    def session_info(self) -> dict[str, Any]:
+        """Return server-authoritative data and order environments.
+
+        This deliberately probes both authenticated stream handshakes instead of
+        inferring safety from a local ``QJ_ENV`` declaration. Callers may compare
+        a local declaration for stale configuration, but the server values are
+        the authority.
+        """
+        info: dict[str, Any] = {"credential": self._client_id}
+        with self.market_data() as md:
+            info["authenticated_user"] = md.user
+            info["data_environment"] = md.environment
+            info["data_session"] = dict(md.auth_info)
+        with self.orders() as oe:
+            info["orders_environment"] = oe.environment
+            info["authority_version"] = oe.authority_version
+            info["orders_session"] = dict(oe.auth_info)
+        return info
+
+    def search_universe(self, query: str = "", limit: int = 50) -> dict[str, Any]:
+        """Search symbols visible to this credential and explain their capabilities."""
+        from .universe import search_symbols
+        symbols = self.data_rest().get("/api/v1/symbols").get("symbols", [])
+        session = self.session_info()
+        return {
+            "query": query,
+            "source": "credential-visible symbols",
+            "data_environment": session.get("data_environment"),
+            "orders_environment": session.get("orders_environment"),
+            "instruments": search_symbols(
+                list(map(str, symbols)), query, limit=limit,
+                data_environment=session.get("data_environment"),
+                orders_environment=session.get("orders_environment"),
+            ),
+        }
+
+    def describe_instrument(self, symbol: str) -> dict[str, Any]:
+        """Explain a symbol in the context of this credential's current authority."""
+        from .universe import describe_instrument
+        session = self.session_info()
+        return describe_instrument(
+            symbol,
+            data_environment=session.get("data_environment"),
+            orders_environment=session.get("orders_environment"),
+        )
+
     # ------------------------------------------------------------ REST reads
     def data_rest(self, opener=None) -> RestClient:
         """REST client for the data gateway (history/stats/chain/recordings)."""

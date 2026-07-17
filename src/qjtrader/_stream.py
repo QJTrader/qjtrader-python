@@ -36,6 +36,12 @@ class _Stream:
         self._buf = bytearray()
         #: The authenticated principal (client_id), set after connect().
         self.user: str | None = None
+        #: Full server authentication/session acknowledgement.
+        self.auth_info: dict[str, Any] = {}
+        #: Authoritative server-resolved environment for this API plane.
+        self.environment: str | None = None
+        #: Opaque marker for the authority row version, when supplied.
+        self.authority_version: str | None = None
 
     # -- lifecycle ---------------------------------------------------------
     def connect(self) -> "_Stream":
@@ -63,7 +69,10 @@ class _Stream:
         ack = json.loads(line)
         if ack.get("type") != "auth_success":
             raise AuthError(f"auth rejected: {ack.get('message') or ack}")
+        self.auth_info = dict(ack)
         self.user = ack.get("user")
+        self.environment = ack.get("environment") or ack.get("env")
+        self.authority_version = ack.get("authority_version")
         return ack
 
     def close(self) -> None:
