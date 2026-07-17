@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.2
+
+- Corrected the published onboarding description: QJ promotes licensed data and order authority
+  independently on the credential; users do not need to rewrite code or assume a credential swap.
+
 ## 0.5.1
 
 - `Client.session_info()` now probes data and order authority independently, so credentials with

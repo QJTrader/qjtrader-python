@@ -17,8 +17,8 @@ pip install qjtrader
 - **Free sandbox, no approval.** Create an account at [gateway.qjtrader.ai](https://gateway.qjtrader.ai),
   click *Create sandbox credential*, and you get a `client_id` + `client_secret` that stream
   **simulated** data and return **simulated** fills — in the *exact production wire format*, 24/7.
-- **Sandbox → production with one credential swap.** Your code never changes; the credential decides
-  sandbox vs. real, server-side.
+- **Sandbox → production without a code change.** Request licensed data and order authority
+  independently; the Gateway promotes the credential server-side and reports the authoritative state.
 - **Stdlib only.** No dependencies — easy to install, easy to audit.
 - **Verifiable releases.** Published straight from this repo via [PyPI Trusted
   Publishing](https://docs.pypi.org/trusted-publishers/) with signed [PEP 740](https://peps.python.org/pep-0740/)
