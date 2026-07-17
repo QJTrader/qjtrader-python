@@ -9,3 +9,11 @@ def test_availability_is_provider_neutral_and_defensive_copy():
     assert "iqfeed" not in text
     first["markets"]["US"]["limitations"].clear()
     assert market_availability()["markets"]["US"]["limitations"]
+
+
+def test_availability_is_product_and_environment_specific():
+    out = market_availability()
+    assert out["products"]["us_future"]["sandbox"]["data"].startswith("synthetic")
+    assert "symbol-dependent" in out["products"]["us_equity_etf"]["production"]["data"]
+    assert "unavailable" in out["products"]["tsx_index"]["production"]["data"]
+    assert out["products"]["forex"]["symbol"] is None

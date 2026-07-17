@@ -16,8 +16,30 @@ _AVAILABILITY: dict[str, Any] = {
         "Sandbox access is self-serve. Live data and production order entry "
         "depend on the entitlements and accounts attached to your credential."
     ),
+    "environment_guide": {
+        "sandbox": "Self-serve, synthetic and 24/7. It accepts CA:, MX: and US: product grammars but does not prove a production entitlement.",
+        "production": "Real data and orders are independently permissioned by market, product, account and route. A quote never implies order authority or L2 availability.",
+        "recommended_check": "Read the product's sandbox and production fields, then session_info for this credential.",
+    },
+    "products": {
+        "ca_equity": {"plain_name": "Canadian common share", "symbol": "CA:RY", "sandbox": {"data": "synthetic L1 + five-level venue-shaped L2", "orders": "simulated"}, "production": {"data": "L1 + official CBBO + all lit-venue L2", "orders": "lit, dark and smart routes; entitled accounts"}},
+        "ca_etf": {"plain_name": "Canadian exchange-traded fund", "symbol": "CA:XIU", "sandbox": {"data": "synthetic L1/L2", "orders": "simulated"}, "production": {"data": "equity feed contract", "orders": "equity routes; entitled accounts"}},
+        "ca_preferred": {"plain_name": "Canadian preferred share", "symbol": "CA:ENB PR A", "sandbox": {"data": "synthetic income-like behaviour + L1/L2", "orders": "simulated"}, "production": {"data": "equity L1/L2; terms/fundamentals not supplied", "orders": "equity routes; entitled accounts"}},
+        "ca_warrant_right_unit": {"plain_name": "Canadian warrant, right or unit", "symbol": "CA:AAB WT", "sandbox": {"data": "synthetic thin/wide L1/L2", "orders": "simulated"}, "production": {"data": "equity L1/L2 when active; contract terms not supplied", "orders": "equity routes; entitled accounts"}},
+        "mx_future": {"plain_name": "Montréal-listed future", "symbol": "MX:CGBU26", "sandbox": {"data": "synthetic L1/L2 and multi-expiry curve", "orders": "simulated"}, "production": {"data": "L1/L2", "orders": "entitled derivatives accounts"}},
+        "mx_option": {"plain_name": "Montréal-listed equity or index option", "symbol": "MX:RY26AUG142.5C21", "sandbox": {"data": "synthetic chain, OI, volume, IV and Greeks", "orders": "simulated"}, "production": {"data": "listed-option L1; analytics source-dependent", "orders": "entitled derivatives accounts"}},
+        "mx_future_option": {"plain_name": "Option on a Montréal future", "symbol": "MX:OGB26AUG117.5C17", "sandbox": {"data": "synthetic L1/L2 and future-linked Greeks", "orders": "simulated"}, "production": {"data": "faithful but often unquoted", "orders": "instrument resolution proven; active market required"}},
+        "mx_strategy": {"plain_name": "Exchange-listed multi-contract strategy", "symbol": "MX:CRAH27CRAU27", "sandbox": {"data": "synthetic package + related legs", "orders": "simulated"}, "production": {"data": "episodic exchange quote", "orders": "2,677 standard forms supported; ratio/custom forms excluded"}},
+        "us_equity_etf": {"plain_name": "US share or ETF", "symbol": "US:SPY", "sandbox": {"data": "synthetic L1/L2", "orders": "simulated"}, "production": {"data": "L1; L2 symbol-dependent (SPY proven, AAPL absent upstream)", "orders": "linked US equity accounts"}},
+        "us_listed_option": {"plain_name": "US listed option", "symbol": "US:BHYP26OCT50P16", "sandbox": {"data": "synthetic L1/L2 and option metrics", "orders": "simulated"}, "production": {"data": "L1 when emitted; no L2 currently", "orders": "linked US option accounts"}},
+        "us_future": {"plain_name": "Selected US future", "symbol": "US:@ESU26", "sandbox": {"data": "synthetic L1/L2 and multi-expiry curve", "orders": "simulated"}, "production": {"data": "selected entitled roots L1/L2", "orders": "enabled families and linked futures accounts"}},
+        "tsx_index": {"plain_name": "TSX index value", "symbol": None, "sandbox": {"data": "not modeled", "orders": "not applicable"}, "production": {"data": "unavailable: upstream engine/entitlement not operational", "orders": "not tradeable"}},
+        "cash_bond": {"plain_name": "Cash bond", "symbol": None, "sandbox": {"data": "not exposed", "orders": "not exposed"}, "production": {"data": "desktop-modeled only", "orders": "requires a new OTC venue integration"}},
+        "forex": {"plain_name": "Foreign exchange", "symbol": None, "sandbox": {"data": "not exposed", "orders": "not exposed"}, "production": {"data": "desktop-modeled only", "orders": "requires a bank or ECN integration"}},
+    },
     "markets": {
         "CA": {
+            "sandbox": "Synthetic L1/L2 and simulated orders for stock-like listings",
             "instruments": "Canadian equities, ETFs and stock-like listings",
             "market_data": "L1 and consolidated/per-venue L2; official CBBO",
             "orders": "Available across supported lit, dark and smart routes",
@@ -25,6 +47,7 @@ _AVAILABILITY: dict[str, Any] = {
             "limitations": ["TSX index values are not currently available"],
         },
         "MX": {
+            "sandbox": "Synthetic futures/options/strategies, chains and simulated orders",
             "instruments": "Montréal Exchange futures and listed options",
             "market_data": "Futures L1/L2; listed-option L1",
             "orders": "Futures and listed options available by account entitlement",
@@ -35,6 +58,7 @@ _AVAILABILITY: dict[str, Any] = {
             ],
         },
         "US": {
+            "sandbox": "Synthetic equities, ETFs, listed options and selected futures; simulated orders",
             "instruments": "US equities/ETFs, listed options and selected futures",
             "market_data": (
                 "Equity/ETF L1; symbol-dependent equity/ETF L2; listed-option L1 "
@@ -65,4 +89,3 @@ _AVAILABILITY: dict[str, Any] = {
 def market_availability() -> dict[str, Any]:
     """Return a copy of the current market-data and order-entry support matrix."""
     return deepcopy(_AVAILABILITY)
-
