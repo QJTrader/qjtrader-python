@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.6
+
+- Market availability now exposes the production QJ/TMX order-level TL2 rows,
+  round/odd/special-lot books, message provenance, and the complete MX event and
+  summary contract.
+- Documentation now reserves `D4` for QuoteMedia/M3 comparison context and uses
+  QJ/TMX order-level TL2 for the QJ data model.
+
 ## 0.5.3
 
 - Added source-aware `data_shapes` and an explicit `observation_contract` to market availability.
