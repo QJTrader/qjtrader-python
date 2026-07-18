@@ -121,6 +121,31 @@ class Client:
         self._verify = verify
         self._rest_opener = rest_opener  # test hook: inject a fake HTTP fetcher
 
+    @classmethod
+    def from_env_file(cls, file: str | os.PathLike[str], **overrides: Any) -> "Client":
+        """Create a client from an ACL-restricted machine credential file.
+
+        The file is parsed directly and never sourced by a shell or copied into
+        ``os.environ``. Human Gateway usernames, passwords, MFA codes and admin
+        approval do not belong in this file.
+        """
+        from .credentials import load_credentials_file
+        values = load_credentials_file(file)
+        options: dict[str, Any] = {
+            "client_id": values["QJ_CLIENT_ID"],
+            "client_secret": values["QJ_CLIENT_SECRET"],
+            "token_url": values.get("QJ_TOKEN_URL"),
+            "data_host": values.get("QJ_DATA_HOST"),
+            "data_port": int(values["QJ_DATA_PORT"]) if values.get("QJ_DATA_PORT") else None,
+            "orders_host": values.get("QJ_ORDERS_HOST"),
+            "orders_port": int(values["QJ_ORDERS_PORT"]) if values.get("QJ_ORDERS_PORT") else None,
+            "data_rest_port": int(values["QJ_DATA_REST_PORT"]) if values.get("QJ_DATA_REST_PORT") else None,
+            "orders_rest_port": int(values["QJ_ORDERS_REST_PORT"]) if values.get("QJ_ORDERS_REST_PORT") else None,
+            "ca_file": values.get("QJ_CA_FILE"),
+        }
+        options.update({key: value for key, value in overrides.items() if value is not None})
+        return cls(**options)
+
     def _token_source(self, scope: str) -> TokenSource:
         return TokenSource(self._token_url, self._client_id, self._client_secret, scope)
 

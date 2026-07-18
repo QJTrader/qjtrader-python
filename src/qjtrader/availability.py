@@ -22,14 +22,14 @@ _AVAILABILITY: dict[str, Any] = {
         "recommended_check": "Read the product's sandbox and production fields, then session_info for this credential.",
     },
     "observation_contract": {
-        "aggregated_book": "snapshot.data.bids/asks contain price and size; orders/venues are optional source detail, not guaranteed fields",
+        "aggregated_book": "snapshot.data.bids/asks contain rounded Top5; Canadian equity snapshots can add odd_lot_bids/odd_lot_asks and special_lot_bids/special_lot_asks at full displayed size; additive book-type views must not be summed into Top5",
         "summary_quote": "quote.data can add last, change, fractional percent_change, volume, high, low and source",
         "unquoted": "a valid subscription can return null prices or remain quiet; this means unquoted now, not price zero",
         "history": "OHLC values are positive prices or null; zero-price upstream sentinels are discarded",
         "honesty_rule": "render only fields present; never infer Greeks, terms, NAV, depth, or order authority from security type",
     },
     "data_shapes": {
-        "equity_book": "price-aggregated depth; venue contributions may be present, while sparse listings can be one-sided or one level",
+        "equity_book": "price-aggregated rounded Top5 plus separate full-size odd-lot and special-lot arrays; venue contributions may be present, while sparse listings can be one-sided or one level",
         "derivative_book": "price/size depth; venue and order-count fields are source-dependent",
         "option_quote": "top-of-book or unquoted state; chain analytics are separate and may be absent in production",
         "package_quote": "episodic package quote; leg prices and exchange ratios must not be assumed",
@@ -59,7 +59,7 @@ _AVAILABILITY: dict[str, Any] = {
             "examples": ["CA:RY", "CA:RY.PT"],
             "limitations": [
                 "Only quote messages with cbbo=true are the official consolidated touch",
-                "External L2 is price-aggregated and currently capped at five levels; it does not include order IDs or D4 add/execute actions",
+                "External L2 is price-aggregated and currently capped at five levels; bids/asks preserve rounded Top5, while odd_lot_* and special_lot_* are additive full-size views that must not be summed into Top5; no order IDs or D4 add/execute actions",
                 "TSX index values are not currently available",
             ],
         },

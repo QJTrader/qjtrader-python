@@ -17,6 +17,7 @@ from __future__ import annotations
 from ._version import __version__
 from .autotools import REGISTRY as AUTO_TOOLS, Scalper, make_auto_tool
 from .availability import market_availability
+from .access import admin_access_url, production_access_url
 from .backtest import BacktestReport, run_backtest, synthetic_bars
 from .l2backtest import L2Context, run_l2_backtest, synthetic_l2_events
 from .client import (
@@ -75,6 +76,8 @@ __all__ = [
     "make_auto_tool",
     "AUTO_TOOLS",
     "market_availability",
+    "production_access_url",
+    "admin_access_url",
     "describe_instrument",
     "search_symbols",
     "product_key",

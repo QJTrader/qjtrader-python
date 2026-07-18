@@ -22,6 +22,8 @@ def top_of_book(message: dict) -> dict:
         "bid_size": data.get("bid_size", bids[0].get("size") if bids else None),
         "ask_size": data.get("ask_size", asks[0].get("size") if asks else None),
         "source_type": message.get("type"),
+        "cbbo": data.get("cbbo") is True,
+        "venue": data.get("venue"),
     }
 
 
@@ -50,11 +52,22 @@ class MarketData(_Stream):
         self.send({"action": "ping"})
 
     def quote(self, symbol: str, timeout: float = 10.0) -> dict:
-        """Subscribe and return a normalized top-of-book from quote or snapshot."""
+        """Return a normalized touch.
+
+        On a real consolidated Canadian symbol (``CA:RY``), this waits for the
+        official ``cbbo=true`` quote. It deliberately ignores venue tops and L2
+        snapshots that share the channel. A venue symbol such as ``CA:RY.PT``
+        continues to return that venue's visible touch.
+        """
         self.subscribe([symbol], depth=1)
+        root = symbol.split(":", 1)[-1]
+        official_cbbo = self.environment in {"real", "live"} and symbol.startswith("CA:") and "." not in root
         for msg in self.messages(timeout=timeout):
-            if msg.get("symbol") == symbol and msg.get("type") in (
-                    "quote", "snapshot", "level2"):
+            if msg.get("symbol") != symbol:
+                continue
+            if official_cbbo and not (msg.get("type") == "quote" and (msg.get("data") or {}).get("cbbo") is True):
+                continue
+            if msg.get("type") in ("quote", "snapshot", "level2"):
                 return top_of_book(msg)
         return {"symbol": symbol, "bid": None, "ask": None,
                 "bid_size": None, "ask_size": None, "source_type": "timeout"}

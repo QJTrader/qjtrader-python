@@ -19,14 +19,18 @@ from .errors import ConnectionClosed, QJError
 
 
 def _client(a: argparse.Namespace) -> Client:
-    return Client(
+    options = dict(
         client_id=a.client_id, client_secret=a.client_secret,
         token_url=a.token_url, data_host=a.data_host, orders_host=a.orders_host,
         ca_file=a.ca, verify=not a.insecure,
     )
+    if a.env_file:
+        return Client.from_env_file(a.env_file, **options)
+    return Client(**options)
 
 
 def _common(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--env-file", help="ACL-restricted QJ machine credential file (never a human password)")
     p.add_argument("--client-id")
     p.add_argument("--client-secret")
     p.add_argument("--token-url")
@@ -46,6 +50,17 @@ def main(argv: list[str] | None = None) -> int:
     pi.add_argument("path", nargs="?", default="qj-strategy")
     pi.add_argument("--symbol", default="CA:RY")
     pi.add_argument("--force", action="store_true")
+
+    pa = sub.add_parser("access-request", help="open the human-approved production access request")
+    pa.add_argument("--plane", choices=["data", "orders"], default="data")
+    pa.add_argument("--market", action="append", default=[], choices=[
+        "ca-equities", "ca-futures", "ca-options", "us-equities", "us-futures", "us-options",
+    ], help="least-privilege market entitlement (repeatable)")
+    pa.add_argument("--label", default="", help="dedicated key name, e.g. 'M3alpha CSU shadow'")
+    pa.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
+    paa = sub.add_parser("access-admin", help="open one request in an authenticated admin Gateway session")
+    paa.add_argument("request_id", help="QJ production request id")
+    paa.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
 
     ps = sub.add_parser("subscribe", help="stream market data for symbols")
     ps.add_argument("symbols", nargs="+", help="e.g. CA:RY MX:CRAU26 US:@ESU26")
@@ -102,6 +117,26 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {e}", file=sys.stderr)
             return 1
         print(json.dumps({"created": files, "next": f"qjtrader backtest {a.path}/strategy.py --symbol {a.symbol}"}, indent=2))
+        return 0
+    if a.cmd == "access-request":
+        import webbrowser
+        from .access import production_access_url
+        url = production_access_url(plane=a.plane, markets=a.market, label=a.label)
+        print(url)
+        if not a.no_open:
+            webbrowser.open(url)
+        return 0
+    if a.cmd == "access-admin":
+        import webbrowser
+        from .access import admin_access_url
+        try:
+            url = admin_access_url(a.request_id)
+        except ValueError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        print(url)
+        if not a.no_open:
+            webbrowser.open(url)
         return 0
     if a.cmd == "backtest":
         return _cmd_backtest(a)

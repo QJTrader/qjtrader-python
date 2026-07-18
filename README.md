@@ -18,7 +18,8 @@ pip install qjtrader
   click *Create sandbox credential*, and you get a `client_id` + `client_secret` that stream
   **simulated** data and return **simulated** fills — in the *exact production wire format*, 24/7.
 - **Sandbox → production without a code change.** Request licensed data and order authority
-  independently; the Gateway promotes the credential server-side and reports the authoritative state.
+  independently. A human admin approves the scope, then separately provisions a dedicated
+  least-privilege key; the SDK and sandbox credential cannot self-promote.
 - **Stdlib only.** No dependencies — easy to install, easy to audit.
 - **Verifiable releases.** Published straight from this repo via [PyPI Trusted
   Publishing](https://docs.pypi.org/trusted-publishers/) with signed [PEP 740](https://peps.python.org/pep-0740/)
@@ -32,6 +33,31 @@ Get a sandbox key from the [console](https://gateway.qjtrader.ai), then:
 export QJ_CLIENT_ID="your-client-id"
 export QJ_CLIENT_SECRET="your-client-secret"
 ```
+
+For a long-running service or coding agent, keep the dedicated machine credential outside the
+repository in an ACL-restricted file:
+
+```dotenv
+QJ_CLIENT_ID=your-dedicated-client-id
+QJ_CLIENT_SECRET=your-dedicated-client-secret
+```
+
+```python
+client = qjtrader.Client.from_env_file("~/.qj/m3alpha-csu.env")
+```
+
+```bash
+chmod 600 ~/.qj/m3alpha-csu.env
+qjtrader subscribe CA:CSU CA:CSU.PT CA:CSU.TO --depth 5 --watch 30 \
+  --env-file ~/.qj/m3alpha-csu.env
+```
+
+The SDK parses this file itself: it does not source shell expressions or copy secrets into the
+process-wide environment. On Windows, restrict the file to your user with NTFS permissions. Never
+store a Gateway password, MFA code, or human admin session in this file; it is only for a dedicated
+OAuth machine credential. Production data and order credentials still require separate human
+approval, and production order entry additionally requires an admin-selected existing trader
+profile.
 
 ### Send an order
 
@@ -76,6 +102,12 @@ with client.market_data() as md:
   `CA:RY.PT` is **PURE (CSE)** only. Futures like `MX:CRAU26` and selected US contracts such as
   `US:@ESU26` are venue-native. Production access remains product- and entitlement-specific. See the full
   [symbology reference](https://docs.qjtrader.ai/docs/ai/symbology).
+- On real consolidated Canadian symbols, `md.quote("CA:RY")` waits for the official
+  `cbbo=true` quote. Canadian external L2 is currently five-level price-aggregated depth—not an
+  order-by-order D4 feed—and carries no order IDs or add/execute actions. `bids`/`asks` are the
+  rounded Top5 book; additive `odd_lot_bids`/`odd_lot_asks` and
+  `special_lot_bids`/`special_lot_asks` expose full displayed sizes by desktop book type and must
+  not be summed into Top5.
 
 ### Check what is available
 
@@ -98,7 +130,9 @@ The package installs a `qjtrader` command:
 
 ```bash
 qjtrader init my-strategy --symbol MX:CRAU26
-qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30
+qjtrader access-request --plane data --market ca-equities --label "M3alpha CSU shadow"
+qjtrader access-admin __prodreq__...   # admins: open that request in an authenticated Gateway session
+qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30 --env-file ~/.qj/strategy.env
 qjtrader order --sym MX:CRAU26 --side buy --qty 1 --price 97.00 --account SIM --tif ioc
 qjtrader status
 qjtrader cancel --orig qj-abc123
