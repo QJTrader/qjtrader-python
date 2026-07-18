@@ -134,7 +134,7 @@ qjtrader login  # browser sign-in; separate from trading API keys
 qjtrader access-status
 qjtrader access-request --plane data --market ca-equities --label "M3alpha CSU shadow"
 qjtrader access-admin-list
-qjtrader access-admin-decide __prodreq__... approved
+qjtrader access-admin-decide __prodreq__... approved --market ca-equities  # omit --market to approve the requested set
 qjtrader access-admin-apply __prodreq__...  # data keys; orders return guided account setup
 qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30 --env-file ~/.qj/strategy.env
 qjtrader order --sym MX:CRAU26 --side buy --qty 1 --price 97.00 --account SIM --tif ioc

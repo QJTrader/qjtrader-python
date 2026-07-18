@@ -93,8 +93,14 @@ class AccessClient:
     def admin_requests(self) -> dict:
         return self._authorized("GET", "/admin/access/requests")
 
-    def admin_decide(self, request_id: str, decision: str) -> dict:
-        return self._authorized("POST", f"/admin/access/requests/{request_id}", {"decision": decision})
+    def admin_decide(self, request_id: str, decision: str, markets: list[str] | None = None) -> dict:
+        body: dict = {"decision": decision}
+        if markets is not None:
+            unknown = [market for market in markets if market not in MARKETS]
+            if unknown:
+                raise ValueError(f"unknown market slug(s): {', '.join(unknown)}")
+            body["markets"] = markets
+        return self._authorized("POST", f"/admin/access/requests/{request_id}", body)
 
     def admin_apply(self, request_id: str) -> dict:
         return self._authorized("POST", f"/admin/access/requests/{request_id}/apply", {})

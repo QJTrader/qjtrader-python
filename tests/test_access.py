@@ -48,3 +48,15 @@ def test_programmatic_request_uses_human_token_not_machine_key(tmp_path, monkeyp
         "plane": "data", "markets": ["ca-equities"], "label": "", "use_case": "",
         "mode": "standard", "additional_reason": "", "credential_mode": "dedicated",
     }, "bearer": "human-token"}
+
+
+def test_admin_decision_can_narrow_approved_markets(tmp_path, monkeypatch):
+    token_file = tmp_path / "user.json"
+    token_file.write_text('{"access_token":"human-token","client_id":"browser-client"}')
+    client = AccessClient(base_url="https://control.example", token_file=token_file)
+    seen = {}
+    monkeypatch.setattr(client, "_authorized", lambda method, path, body=None: seen.update(
+        method=method, path=path, body=body) or {"status": "approved"})
+    client.admin_decide("request-1", "approved", ["ca-equities"])
+    assert seen == {"method": "POST", "path": "/admin/access/requests/request-1",
+                    "body": {"decision": "approved", "markets": ["ca-equities"]}}

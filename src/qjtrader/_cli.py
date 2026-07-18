@@ -71,6 +71,9 @@ def main(argv: list[str] | None = None) -> int:
     pal = sub.add_parser("access-admin-list", help="list access decisions requiring an administrator")
     pad = sub.add_parser("access-admin-decide", help="record a human administrator decision")
     pad.add_argument("request_id"); pad.add_argument("decision", choices=["approved", "rejected", "pending"])
+    pad.add_argument("--market", action="append", default=None, choices=[
+        "ca-equities", "ca-futures", "ca-options", "us-equities", "us-futures", "us-options",
+    ], help="approved market subset (repeatable; defaults to all requested markets)")
     pap = sub.add_parser("access-admin-apply", help="provision an approved data request; order entry opens guided setup")
     pap.add_argument("request_id")
 
@@ -163,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
         from .access import AccessClient
         control = AccessClient()
         if a.cmd == "access-admin-list": result = control.admin_requests()
-        elif a.cmd == "access-admin-decide": result = control.admin_decide(a.request_id, a.decision)
+        elif a.cmd == "access-admin-decide": result = control.admin_decide(a.request_id, a.decision, a.market)
         else: result = control.admin_apply(a.request_id)
         print(json.dumps(result, indent=2)); return 0
     if a.cmd == "access-admin":
