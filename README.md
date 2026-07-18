@@ -103,8 +103,8 @@ with client.market_data() as md:
   `US:@ESU26` are venue-native. Production access remains product- and entitlement-specific. See the full
   [symbology reference](https://docs.qjtrader.ai/docs/ai/symbology).
 - On real consolidated Canadian symbols, `md.quote("CA:RY")` waits for the official
-  `cbbo=true` quote. Canadian external L2 is currently five-level price-aggregated depth—not an
-  order-by-order D4 feed—and carries no order IDs or add/execute actions. `bids`/`asks` are the
+  `cbbo=true` quote. Canadian L2 carries five-level price views plus entitled QJ/TMX order-level TL2 rows
+  in `order_bids`/`order_asks`, including available venue, broker, order identity, and attributes. `bids`/`asks` are the
   rounded Top5 book; additive `odd_lot_bids`/`odd_lot_asks` and
   `special_lot_bids`/`special_lot_asks` expose full displayed sizes by desktop book type and must
   not be summed into Top5.
