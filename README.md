@@ -130,8 +130,12 @@ The package installs a `qjtrader` command:
 
 ```bash
 qjtrader init my-strategy --symbol MX:CRAU26
+qjtrader login  # browser sign-in; separate from trading API keys
+qjtrader access-status
 qjtrader access-request --plane data --market ca-equities --label "M3alpha CSU shadow"
-qjtrader access-admin __prodreq__...   # admins: open that request in an authenticated Gateway session
+qjtrader access-admin-list
+qjtrader access-admin-decide __prodreq__... approved
+qjtrader access-admin-apply __prodreq__...  # data keys; orders return guided account setup
 qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30 --env-file ~/.qj/strategy.env
 qjtrader order --sym MX:CRAU26 --side buy --qty 1 --price 97.00 --account SIM --tif ioc
 qjtrader status
@@ -140,6 +144,8 @@ qjtrader cancel --orig qj-abc123
 # strategies: the same file runs in backtest and live
 qjtrader backtest examples/strategy_meanreversion.py --symbol MX:CRAU26 --bars 200
 qjtrader run       examples/strategy_meanreversion.py --symbols MX:CRAU26 --tag mr1
+qjtrader runs
+qjtrader stop-run local-abc123
 ```
 
 `qjtrader init` creates a small local project that observes by default and keeps order mutation
@@ -151,7 +157,9 @@ inspect, test, and run locally without adding a cloud IDE or another account-set
 Subclass `Strategy` and the same file runs in the backtest engine, a paper run, or
 live (plan §10). Backtests are offline and deterministic (no network, no secrets);
 `qjtrader run` hosts it against a live/paper credential, tags every order with the
-strategy name (so the journal groups by strategy), and cancels everything on Ctrl-C.
+strategy name, writes a local run record, and cancels working orders on Ctrl-C or
+`qjtrader stop-run RUN_ID`. Access commands use browser-authenticated human identity;
+ordinary trading credentials cannot approve or provision themselves.
 
 ```python
 from qjtrader import Strategy, run_backtest, synthetic_bars

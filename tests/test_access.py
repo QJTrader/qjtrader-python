@@ -2,7 +2,7 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from qjtrader.access import admin_access_url, production_access_url
+from qjtrader.access import AccessClient, admin_access_url, production_access_url
 from qjtrader._cli import main
 
 
@@ -32,3 +32,19 @@ def test_admin_handoff_contains_no_admin_token_or_secret():
     assert "gateway.qjtrader.ai/admin?" in url
     assert "token" not in url.lower()
     assert "secret" not in url.lower()
+
+
+def test_programmatic_request_uses_human_token_not_machine_key(tmp_path, monkeypatch):
+    token_file = tmp_path / "user.json"
+    token_file.write_text('{"access_token":"human-token","client_id":"browser-client"}')
+    client = AccessClient(base_url="https://control.example", token_file=token_file)
+    seen = {}
+    def fake_json(method, path, body=None, bearer=""):
+        seen.update(method=method, path=path, body=body, bearer=bearer)
+        return {"status": "pending"}
+    monkeypatch.setattr(client, "_json", fake_json)
+    assert client.request(plane="data", markets=["ca-equities"])["status"] == "pending"
+    assert seen == {"method": "POST", "path": "/access", "body": {
+        "plane": "data", "markets": ["ca-equities"], "label": "", "use_case": "",
+        "mode": "standard", "additional_reason": "", "credential_mode": "dedicated",
+    }, "bearer": "human-token"}

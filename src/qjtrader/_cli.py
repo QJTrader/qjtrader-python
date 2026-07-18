@@ -51,16 +51,28 @@ def main(argv: list[str] | None = None) -> int:
     pi.add_argument("--symbol", default="CA:RY")
     pi.add_argument("--force", action="store_true")
 
+    sub.add_parser("login", help="sign in as a QJ Gateway user in your browser")
+    sub.add_parser("access-status", help="show live data, order entry, and pending requests")
+
     pa = sub.add_parser("access-request", help="open the human-approved production access request")
     pa.add_argument("--plane", choices=["data", "orders"], default="data")
     pa.add_argument("--market", action="append", default=[], choices=[
         "ca-equities", "ca-futures", "ca-options", "us-equities", "us-futures", "us-options",
     ], help="least-privilege market entitlement (repeatable)")
     pa.add_argument("--label", default="", help="dedicated key name, e.g. 'M3alpha CSU shadow'")
+    pa.add_argument("--use-case", default="")
+    pa.add_argument("--additional-reason", default="", help="request another account, route, isolated key, or depth entitlement")
+    pa.add_argument("--extend", action="store_true", help="extend the selected key instead of the recommended dedicated key")
+    pa.add_argument("--handoff", action="store_true", help="use the browser request form instead of the signed-in API")
     pa.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
     paa = sub.add_parser("access-admin", help="open one request in an authenticated admin Gateway session")
     paa.add_argument("request_id", help="QJ production request id")
     paa.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
+    pal = sub.add_parser("access-admin-list", help="list access decisions requiring an administrator")
+    pad = sub.add_parser("access-admin-decide", help="record a human administrator decision")
+    pad.add_argument("request_id"); pad.add_argument("decision", choices=["approved", "rejected", "pending"])
+    pap = sub.add_parser("access-admin-apply", help="provision an approved data request; order entry opens guided setup")
+    pap.add_argument("request_id")
 
     ps = sub.add_parser("subscribe", help="stream market data for symbols")
     ps.add_argument("symbols", nargs="+", help="e.g. CA:RY MX:CRAU26 US:@ESU26")
@@ -104,9 +116,13 @@ def main(argv: list[str] | None = None) -> int:
     pr.add_argument("strategy", help="path to a .py file with a Strategy subclass")
     pr.add_argument("--symbols", nargs="+", required=True)
     pr.add_argument("--tag", default="strat", help="strategy tag on every order")
+    pr.add_argument("--run-id", help="recognizable local run id (auto-generated when omitted)")
     pr.add_argument("--account", default="")
     pr.add_argument("--param", action="append", default=[])
     _common(pr)
+    sub.add_parser("runs", help="list strategies running or recently stopped on this device")
+    psr = sub.add_parser("stop-run", help="safely stop a local strategy by run id")
+    psr.add_argument("run_id")
 
     a = p.parse_args(argv)
     if a.cmd == "init":
@@ -118,14 +134,38 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"created": files, "next": f"qjtrader backtest {a.path}/strategy.py --symbol {a.symbol}"}, indent=2))
         return 0
+    if a.cmd == "login":
+        from .access import AccessClient
+        print(json.dumps(AccessClient().login(), indent=2))
+        return 0
+    if a.cmd == "access-status":
+        from .access import AccessClient
+        print(json.dumps(AccessClient().status(), indent=2))
+        return 0
     if a.cmd == "access-request":
         import webbrowser
-        from .access import production_access_url
+        from .access import AccessClient, production_access_url
+        if not a.handoff and not a.no_open:
+            try:
+                result = AccessClient().request(plane=a.plane, markets=a.market, label=a.label,
+                    use_case=a.use_case, mode="additional" if a.additional_reason else "standard",
+                    additional_reason=a.additional_reason,
+                    credential_mode="extend" if a.extend else "dedicated")
+                print(json.dumps(result, indent=2)); return 0
+            except RuntimeError as e:
+                print(f"error: {e}", file=sys.stderr); return 1
         url = production_access_url(plane=a.plane, markets=a.market, label=a.label)
         print(url)
         if not a.no_open:
             webbrowser.open(url)
         return 0
+    if a.cmd in {"access-admin-list", "access-admin-decide", "access-admin-apply"}:
+        from .access import AccessClient
+        control = AccessClient()
+        if a.cmd == "access-admin-list": result = control.admin_requests()
+        elif a.cmd == "access-admin-decide": result = control.admin_decide(a.request_id, a.decision)
+        else: result = control.admin_apply(a.request_id)
+        print(json.dumps(result, indent=2)); return 0
     if a.cmd == "access-admin":
         import webbrowser
         from .access import admin_access_url
@@ -142,6 +182,13 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_backtest(a)
     if a.cmd == "run":
         return _cmd_run(a)
+    if a.cmd == "runs":
+        from .local_runs import list_runs
+        print(json.dumps({"runs": list_runs()}, indent=2)); return 0
+    if a.cmd == "stop-run":
+        from .local_runs import request_stop
+        result = request_stop(a.run_id); print(json.dumps(result, indent=2))
+        return 1 if "error" in result else 0
     try:
         client = _client(a)
         if a.cmd == "subscribe":
@@ -218,19 +265,33 @@ def _cmd_run(a: argparse.Namespace) -> int:
     import signal
     import threading
 
+    import uuid
+    from .local_runs import clear_stop, record, stop_requested
     from .run import run_strategy_live
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
+    run_id = a.run_id or f"local-{uuid.uuid4().hex[:10]}"
+    clear_stop(run_id)
+    record(run_id, {"status": "starting", "strategy": a.strategy, "symbols": a.symbols, "tag": a.tag})
+    def watch_stop():
+        while not stop.wait(0.5):
+            if stop_requested(run_id): stop.set()
+    threading.Thread(target=watch_stop, daemon=True).start()
     try:
         client = _client(a)
-        print(f"# running {a.strategy} on {a.symbols} (tag={a.tag}); Ctrl-C to stop",
+        record(run_id, {"status": "running"})
+        print(f"# run {run_id}: {a.strategy} on {a.symbols} (tag={a.tag}); Ctrl-C or `qjtrader stop-run {run_id}` to stop",
               file=sys.stderr)
         run_strategy_live(client, a.strategy, symbols=a.symbols,
                           params=_parse_params(a.param), account=a.account,
-                          strategy_tag=a.tag, stop=stop)
+                          strategy_tag=a.tag, stop=stop, run_id=run_id)
     except QJError as e:
+        record(run_id, {"status": "error", "error": str(e)})
         print(f"error: {e}", file=sys.stderr)
         return 1
+    finally:
+        if stop.is_set(): record(run_id, {"status": "stopped"})
+        clear_stop(run_id)
     return 0
 
 

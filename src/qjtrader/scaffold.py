@@ -60,10 +60,18 @@ qjtrader backtest strategy.py --symbol {symbol} --param allow_orders=true
 Before a connected run, confirm the credential environment. Use a sandbox key first:
 
 ```powershell
-qjtrader run strategy.py --symbols {symbol} --tag first --account SIM --param allow_orders=true
+qjtrader run strategy.py --symbols {symbol} --tag first --run-id first --account SIM --param allow_orders=true
 ```
 
-Stop with Ctrl-C. The supervisor cancels working orders and QJ Gateway records the run's versioned tag.
+The run appears on the Gateway Wire with its versioned identity. Inspect or stop it from another
+terminal (or ask your coding agent to do this):
+
+```powershell
+qjtrader runs
+qjtrader stop-run first
+```
+
+Ctrl-C also stops it. Either path calls the strategy stop hook and cancels its working orders.
 '''
 
 
