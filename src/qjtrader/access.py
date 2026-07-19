@@ -82,13 +82,13 @@ class AccessClient:
 
     def request(self, *, plane: str, markets: list[str], label: str = "", use_case: str = "",
                 mode: str = "standard", additional_reason: str = "",
-                credential_mode: str = "dedicated") -> dict:
+                credential_mode: str = "account") -> dict:
         unknown = [market for market in markets if market not in MARKETS]
         if unknown:
             raise ValueError(f"unknown market slug(s): {', '.join(unknown)}")
         return self._authorized("POST", "/access", {"plane": plane, "markets": markets,
-            "label": label, "use_case": use_case, "mode": mode,
-            "additional_reason": additional_reason, "credential_mode": credential_mode})
+            "use_case": use_case, "mode": mode,
+            "additional_reason": additional_reason, "credential_mode": "account"})
 
     def admin_requests(self) -> dict:
         return self._authorized("GET", "/admin/access/requests")

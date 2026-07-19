@@ -45,8 +45,8 @@ def test_programmatic_request_uses_human_token_not_machine_key(tmp_path, monkeyp
     monkeypatch.setattr(client, "_json", fake_json)
     assert client.request(plane="data", markets=["ca-equities"])["status"] == "pending"
     assert seen == {"method": "POST", "path": "/access", "body": {
-        "plane": "data", "markets": ["ca-equities"], "label": "", "use_case": "",
-        "mode": "standard", "additional_reason": "", "credential_mode": "dedicated",
+        "plane": "data", "markets": ["ca-equities"], "use_case": "",
+        "mode": "standard", "additional_reason": "", "credential_mode": "account",
     }, "bearer": "human-token"}
 
 

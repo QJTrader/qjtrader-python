@@ -59,10 +59,10 @@ def main(argv: list[str] | None = None) -> int:
     pa.add_argument("--market", action="append", default=[], choices=[
         "ca-equities", "ca-futures", "ca-options", "us-equities", "us-futures", "us-options",
     ], help="least-privilege market entitlement (repeatable)")
-    pa.add_argument("--label", default="", help="dedicated key name, e.g. 'M3alpha CSU shadow'")
+    pa.add_argument("--label", default="", help=argparse.SUPPRESS)
     pa.add_argument("--use-case", default="")
-    pa.add_argument("--additional-reason", default="", help="request another account, route, isolated key, or depth entitlement")
-    pa.add_argument("--extend", action="store_true", help="extend the selected key instead of the recommended dedicated key")
+    pa.add_argument("--additional-reason", default="", help="request another trading account or additional market-data depth")
+    pa.add_argument("--extend", action="store_true", help=argparse.SUPPRESS)
     pa.add_argument("--handoff", action="store_true", help="use the browser request form instead of the signed-in API")
     pa.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
     paa = sub.add_parser("access-admin", help="open one request in an authenticated admin Gateway session")
@@ -153,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
                 result = AccessClient().request(plane=a.plane, markets=a.market, label=a.label,
                     use_case=a.use_case, mode="additional" if a.additional_reason else "standard",
                     additional_reason=a.additional_reason,
-                    credential_mode="extend" if a.extend else "dedicated")
+                    credential_mode="account")
                 print(json.dumps(result, indent=2)); return 0
             except RuntimeError as e:
                 print(f"error: {e}", file=sys.stderr); return 1

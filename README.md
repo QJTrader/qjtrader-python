@@ -132,7 +132,7 @@ The package installs a `qjtrader` command:
 qjtrader init my-strategy --symbol MX:CRAU26
 qjtrader login  # browser sign-in; separate from trading API keys
 qjtrader access-status
-qjtrader access-request --plane data --market ca-equities --label "M3alpha CSU shadow"
+qjtrader access-request --plane data --market ca-equities
 qjtrader access-admin-list
 qjtrader access-admin-decide __prodreq__... approved --market ca-equities  # omit --market to approve the requested set
 qjtrader access-admin-apply __prodreq__...  # data keys; orders return guided account setup
@@ -160,6 +160,11 @@ live (plan §10). Backtests are offline and deterministic (no network, no secret
 strategy name, writes a local run record, and cancels working orders on Ctrl-C or
 `qjtrader stop-run RUN_ID`. Access commands use browser-authenticated human identity;
 ordinary trading credentials cannot approve or provision themselves.
+
+Access is account-level, while API keys are revocable delegations. Most users need one production
+key and one sandbox key. A production key may use all or a restricted subset of the account's
+approved Data markets, Order Entry markets, and linked trading accounts; creating or restricting a
+key never grants a new market or account.
 
 ```python
 from qjtrader import Strategy, run_backtest, synthetic_bars
@@ -198,6 +203,9 @@ expire — you never handle them directly. Need a raw token (e.g. for the WebSoc
 Use `client.session_info()` when a local agent needs the Gateway's authoritative Data and Order
 Entry environments. The authenticated session also returns the market products and trading
 accounts active on this particular key. These are a restricted subset of the human user's approved
+access. For combined production keys, Order Entry also returns accounts by market product, and the
+positions endpoint reports product-specific cloud limits alongside broker, fill, and total position
+context where the OMS snapshot is available.
 Gateway access; changing a local setting or requesting another OAuth scope cannot widen them.
 `client.search_universe()` and `client.describe_instrument(symbol)` provide small,
 machine-readable discovery helpers so code does not have to infer product identity from prose.
