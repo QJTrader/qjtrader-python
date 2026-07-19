@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.11
+
+- Positions responses now type the account-profile, product-specific broker-risk, and broker-warning
+  fields exposed by the live account view.
+- Clarified that weighted Desktop RiskPoints are monitoring context, while Gateway limits and
+  directly comparable route size/open-order caps are the cloud pre-trade controls.
+
 ## 0.5.10
 
 - Added demand-driven market-memory methods: recording status, durable production pins, and
