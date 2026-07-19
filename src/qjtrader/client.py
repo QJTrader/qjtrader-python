@@ -168,12 +168,14 @@ class Client:
         return self._token_source(scope).token()
 
     def session_info(self) -> dict[str, Any]:
-        """Return server-authoritative data and order environments.
+        """Return server-authoritative environments and this key's active access.
 
         This deliberately probes both authenticated stream handshakes instead of
         inferring safety from a local ``QJ_ENV`` declaration. Callers may compare
         a local declaration for stale configuration, but the server values are
-        the authority.
+        the authority. ``data_session.data_products`` and
+        ``orders_session.order_products/order_accounts`` expose the restricted
+        key subset enforced by the two gateways.
         """
         info: dict[str, Any] = {"credential": self._client_id}
         try:
