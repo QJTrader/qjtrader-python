@@ -81,8 +81,9 @@
   `PositionsEnvelope` / `PositionDetail` `TypedDict`s) the full `GET /api/v1/positions` surface:
   the flat fill-only `positions` map (unchanged, back-compat) plus, on a real-plane credential
   with the broker feed wired, `positions_detail` (`{broker_qty, fill_qty, total_qty}` per canonical
-  symbol — the desktop `TotalVolume = InitVolume + NetVolume`), `admserv_limits` (hard floor/ceiling
-  risk caps), `capital_required`, `broker_asof`/`broker_synced_at`, and the `orders_env` plane
+  symbol — the desktop `TotalVolume = InitVolume + NetVolume`), `admserv_limits` (directly comparable
+  route size/open-order prechecks plus weighted Desktop risk monitoring context), `capital_required`,
+  `broker_asof`/`broker_synced_at`, and the `orders_env` plane
   (`sandbox`/`paper`/`shadow`/`real`). Simulated planes return a fill-only detail and omit the
   broker/risk fields — that's by design, not a bug.
 - **Restart hydration seeds the broker total, not just today's fills.** `run_strategy_live`'s

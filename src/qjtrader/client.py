@@ -83,13 +83,23 @@ class AccountFinancial(TypedDict, total=False):
     status: Optional[str]
 
 
+class AccountProfile(TypedDict, total=False):
+    """Human Desktop trader profile linked to a trading account."""
+    compid: str
+    name: str
+    access_level: Optional[int]
+    desktop_limits: Dict[str, Any]
+    limits_configured: bool
+
+
 class PositionsEnvelope(TypedDict, total=False):
     """Return shape of :meth:`Client.positions` (``GET /api/v1/positions``).
 
     Always present: ``type``, ``user``, ``envelope`` (limit caps), ``positions``
     (flat fill-only ``symbol -> net int``, back-compat), ``orders_env`` (plane).
     Present only on a real plane with the broker feed wired: ``positions_detail``,
-    ``admserv_limits``, ``capital_required``, ``broker_asof``, ``broker_synced_at``.
+    ``admserv_limits`` (route prechecks plus Desktop monitoring context), ``capital_required``,
+    ``broker_asof``, ``broker_synced_at``.
     """
     type: str
     user: str
@@ -99,11 +109,14 @@ class PositionsEnvelope(TypedDict, total=False):
     orders_env: Optional[str]
     positions_detail: Dict[str, PositionDetail]
     positions_by_account: Dict[str, Dict[str, PositionDetail]]
+    account_profiles: Dict[str, list[AccountProfile]]
     account_financials: Dict[str, AccountFinancial]
     admserv_limits: Dict[str, Any]
+    admserv_limits_by_product: Dict[str, Dict[str, Any]]
     capital_required: Dict[str, Any]
     broker_asof: Optional[str]
     broker_synced_at: Optional[str]
+    broker_warnings: list[str]
 
 
 class Client:
@@ -387,12 +400,22 @@ class Client:
         §3.4): ``positions_detail`` maps each canonical symbol to
         ``{broker_qty, fill_qty, total_qty}`` — the desktop formula
         ``TotalVolume = InitVolume (broker start-of-day) + NetVolume (today's fills)``
-        — plus ``admserv_limits`` (the hard floor/ceiling risk caps),
+        — plus ``admserv_limits`` (route prechecks plus Desktop/AdmServ risk context),
         ``capital_required``, ``broker_asof`` and ``broker_synced_at``.
         ``positions_by_account`` preserves the account split and
+        ``account_profiles`` maps account numbers to recognizable Desktop trader
+        names/CompIDs without exposing credentials. ``admserv_limits_by_product``
+        identifies the cloud service route row separately from those human profiles.
         ``account_financials`` carries broker morning account values. Account
         value is not spendable cash or buying power; those fields remain empty
         unless the broker supplies an authoritative value.
+
+        The explicit Gateway ``envelope`` and directly comparable route fields
+        (futures ``sizecaps`` and route-specific ``maxopenorders``) are enforced by
+        the cloud order path. Weighted equity/futures ``riskpoints`` are not raw
+        per-symbol quantities and remain monitoring context until the cloud has
+        Desktop-equivalent portfolio weighting. Full downstream legacy safeguards
+        operate independently.
 
         ``orders_env`` reports the credential's order plane
         (``sandbox``/``paper``/``shadow``/``real``, or ``None`` on a legacy real
