@@ -124,6 +124,9 @@ Verified examples include AAPL L1, SPY L1/L2, and selected US futures L1/L2. AAP
 and US listed-option depth are not currently available. See
 [Market Availability](https://docs.qjtrader.ai/docs/ai/availability).
 
+History is provenance-safe: sandbox responses say `source="synthetic"`; production responses are
+`recorded` or `unavailable`. An empty `not_recorded` range is not replaced with generated bars.
+
 ## Command line
 
 The package installs a `qjtrader` command:

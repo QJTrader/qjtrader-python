@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.8
+
+- Market availability now documents live-sampled sparse shapes across Canadian cash listings,
+  Montréal derivatives, US equities/options, and selected US futures.
+- History/stat responses expose `source=synthetic|recorded|unavailable` and availability metadata;
+  production history never silently falls back to generated bars.
+
 ## 0.5.7
 
 - Added `AccessClient.request_limit_change()` and `qjtrader limit-request` so users and agents can

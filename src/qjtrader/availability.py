@@ -10,7 +10,7 @@ from typing import Any
 
 
 _AVAILABILITY: dict[str, Any] = {
-    "as_of": "2026-07-18",
+    "as_of": "2026-07-19",
     "reference": "https://docs.qjtrader.ai/docs/ai/availability",
     "access_note": (
         "Sandbox access is self-serve. Live data and production order entry "
@@ -27,7 +27,8 @@ _AVAILABILITY: dict[str, Any] = {
         "events": "market_event messages preserve exchange state, auctions, MOC, RFQ, reference, schedule and correction records; branch on data.event and render only fields present",
         "summary_quote": "quote.data can add last, change, fractional percent_change, volume, high, low and source",
         "unquoted": "a valid subscription can return null prices or remain quiet; this means unquoted now, not price zero",
-        "history": "OHLC values are positive prices or null; zero-price upstream sentinels are discarded",
+        "history": "history.source is synthetic in sandbox, recorded for captured production observations, or unavailable; production never falls back to generated bars",
+        "history_empty": "availability=not_recorded with an empty bars array is an honest production result, not a connectivity failure and not permission to draw a synthetic chart",
         "honesty_rule": "render only fields present; never infer Greeks, terms, NAV, depth, or order authority from security type",
     },
     "data_shapes": {
@@ -39,10 +40,10 @@ _AVAILABILITY: dict[str, Any] = {
     "products": {
         "ca_equity": {"plain_name": "Canadian common share", "symbol": "CA:RY", "sandbox": {"data": "synthetic L1 + five-level venue-shaped L2", "orders": "simulated"}, "production": {"data": "official CBBO + five-level price views and entitled QJ/TMX order-level TL2 rows, consolidated or per venue", "orders": "lit, dark and smart routes; entitled accounts"}},
         "ca_etf": {"plain_name": "Canadian exchange-traded fund", "symbol": "CA:XIU", "sandbox": {"data": "synthetic L1/L2", "orders": "simulated"}, "production": {"data": "equity feed contract", "orders": "equity routes; entitled accounts"}},
-        "ca_preferred": {"plain_name": "Canadian preferred share", "symbol": "CA:ENB PR A", "sandbox": {"data": "synthetic income-like behaviour + L1/L2", "orders": "simulated"}, "production": {"data": "equity L1/L2; terms/fundamentals not supplied", "orders": "equity routes; entitled accounts"}},
-        "ca_warrant_right_unit": {"plain_name": "Canadian warrant, right or unit", "symbol": "CA:AAB WT", "sandbox": {"data": "synthetic thin/wide L1/L2", "orders": "simulated"}, "production": {"data": "equity L1/L2 when active; contract terms not supplied", "orders": "equity routes; entitled accounts"}},
+        "ca_preferred": {"plain_name": "Canadian preferred share", "symbol": "CA:ENB PR A", "sandbox": {"data": "synthetic income-like behaviour + L1/L2", "orders": "simulated"}, "production": {"data": "equity L1; L2 can be empty for a currently quoted security; terms/fundamentals not supplied", "orders": "equity routes; entitled accounts"}},
+        "ca_warrant_right_unit": {"plain_name": "Canadian warrant, right or unit", "symbol": "CA:CAR UN", "sandbox": {"data": "synthetic thin/wide L1/L2", "orders": "simulated"}, "production": {"data": "equity L1; L2 may be shallow or empty; contract terms not supplied", "orders": "equity routes; entitled accounts"}},
         "mx_future": {"plain_name": "Montréal-listed future", "symbol": "MX:CGBU26", "sandbox": {"data": "synthetic L1/L2 and multi-expiry curve", "orders": "simulated"}, "production": {"data": "L1/L2 including implied depth, summaries, RFQ and correction events when emitted", "orders": "entitled derivatives accounts"}},
-        "mx_option": {"plain_name": "Montréal-listed equity or index option", "symbol": "MX:RY26AUG142.5C21", "sandbox": {"data": "synthetic chain, OI, volume, IV and Greeks", "orders": "simulated"}, "production": {"data": "listed-option L1; analytics source-dependent", "orders": "entitled derivatives accounts"}},
+        "mx_option": {"plain_name": "Montréal-listed equity or index option", "symbol": "MX:AAPL26AUG44.5C21", "sandbox": {"data": "synthetic chain, OI, volume, IV and Greeks", "orders": "simulated"}, "production": {"data": "listed-option L1 when emitted; a zero last is not a trade; analytics source-dependent", "orders": "entitled derivatives accounts"}},
         "mx_future_option": {"plain_name": "Option on a Montréal future", "symbol": "MX:OGB26AUG117.5C17", "sandbox": {"data": "synthetic L1/L2 and future-linked Greeks", "orders": "simulated"}, "production": {"data": "faithful but often unquoted", "orders": "instrument resolution proven; active market required"}},
         "mx_strategy": {"plain_name": "Exchange-listed multi-contract strategy", "symbol": "MX:CRAH27CRAU27", "sandbox": {"data": "synthetic package + related legs", "orders": "simulated"}, "production": {"data": "exchange quote, depth, trades, summaries, reference and status events when emitted", "orders": "2,677 standard forms supported; ratio/custom forms excluded"}},
         "us_equity_etf": {"plain_name": "US share or ETF", "symbol": "US:SPY", "sandbox": {"data": "synthetic L1/L2", "orders": "simulated"}, "production": {"data": "L1; L2 symbol-dependent (SPY proven, AAPL absent upstream)", "orders": "linked US equity accounts"}},
@@ -61,6 +62,7 @@ _AVAILABILITY: dict[str, Any] = {
             "examples": ["CA:RY", "CA:RY.PT"],
             "limitations": [
                 "Only quote messages with cbbo=true are the official consolidated touch",
+                "Quote-only states are normal: a preferred or warrant may have L1 while its L2 arrays are empty",
                 "bids/asks are rounded Top5; odd_lot_*, special_lot_* and order_bids/order_asks are additive views and must not be summed into Top5",
                 "TSX index values are not currently available",
             ],
@@ -73,6 +75,7 @@ _AVAILABILITY: dict[str, Any] = {
             "examples": ["MX:CGBU26", "MX:AAPL26AUG33C21"],
             "limitations": [
                 "Some thin or seasonal contracts may have no current quote",
+                "Depth can be one level or absent; render the returned shape instead of assuming five levels",
                 "Strategy and options-on-futures availability depends on an active market",
             ],
         },

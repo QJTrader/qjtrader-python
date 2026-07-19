@@ -21,4 +21,6 @@ def test_availability_is_product_and_environment_specific():
     assert "unavailable" in out["products"]["tsx_index"]["production"]["data"]
     assert out["products"]["forex"]["symbol"] is None
     assert "null prices" in out["observation_contract"]["unquoted"]
+    assert "never falls back" in out["observation_contract"]["history"]
+    assert "not_recorded" in out["observation_contract"]["history_empty"]
     assert "source-dependent" in out["data_shapes"]["derivative_book"]

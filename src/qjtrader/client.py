@@ -266,12 +266,17 @@ class Client:
 
     def history(self, symbol: str, interval: str = "1m", frm=None, to=None,
                 limit: int = 500) -> dict:
-        """Historical OHLCV bars for a symbol (synthetic for sandbox creds)."""
+        """Historical OHLCV bars with explicit provenance.
+
+        ``source`` is ``synthetic`` in sandbox, ``recorded`` for captured
+        production observations, or ``unavailable``. Production never falls
+        back to generated bars.
+        """
         return self.data_rest().get("/api/v1/history", {
             "symbol": symbol, "interval": interval, "from": frm, "to": to, "limit": limit})
 
     def stats(self, symbol: str, interval: str = "1m", window: float = 3600.0) -> dict:
-        """Server-computed digest (VWAP, spread, volume, realized vol) for a symbol."""
+        """Server-computed digest plus the same history provenance fields."""
         return self.data_rest().get("/api/v1/stats", {
             "symbol": symbol, "interval": interval, "window": window})
 
