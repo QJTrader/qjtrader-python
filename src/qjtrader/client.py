@@ -60,6 +60,29 @@ class PositionDetail(TypedDict, total=False):
     source: Optional[str]
 
 
+class AccountFinancial(TypedDict, total=False):
+    """Broker morning account fields, keyed by trading account.
+
+    ``account_value`` supports Desktop-style capital monitoring. It is not
+    guaranteed spendable cash or buying power; those remain ``None`` unless a
+    broker supplies an authoritative value.
+    """
+    account_value: Optional[float]
+    currency: Optional[str]
+    source: Optional[str]
+    margin_or_excess: Optional[float]
+    current_trade_balance: Optional[float]
+    current_settlement_balance: Optional[float]
+    market_value: Optional[float]
+    loan_value: Optional[float]
+    broker_capital_required: Optional[float]
+    account_status: Optional[str]
+    activity_date: Optional[str]
+    cash_available: Optional[float]
+    buying_power: Optional[float]
+    status: Optional[str]
+
+
 class PositionsEnvelope(TypedDict, total=False):
     """Return shape of :meth:`Client.positions` (``GET /api/v1/positions``).
 
@@ -75,6 +98,8 @@ class PositionsEnvelope(TypedDict, total=False):
     tag_positions: Dict[str, int]
     orders_env: Optional[str]
     positions_detail: Dict[str, PositionDetail]
+    positions_by_account: Dict[str, Dict[str, PositionDetail]]
+    account_financials: Dict[str, AccountFinancial]
     admserv_limits: Dict[str, Any]
     capital_required: Dict[str, Any]
     broker_asof: Optional[str]
@@ -338,6 +363,10 @@ class Client:
         ``TotalVolume = InitVolume (broker start-of-day) + NetVolume (today's fills)``
         — plus ``admserv_limits`` (the hard floor/ceiling risk caps),
         ``capital_required``, ``broker_asof`` and ``broker_synced_at``.
+        ``positions_by_account`` preserves the account split and
+        ``account_financials`` carries broker morning account values. Account
+        value is not spendable cash or buying power; those fields remain empty
+        unless the broker supplies an authoritative value.
 
         ``orders_env`` reports the credential's order plane
         (``sandbox``/``paper``/``shadow``/``real``, or ``None`` on a legacy real
