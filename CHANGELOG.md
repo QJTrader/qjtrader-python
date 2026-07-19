@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.8
+## 0.5.9
 
 - Market availability now documents live-sampled sparse shapes across Canadian cash listings,
   Montréal derivatives, US equities/options, and selected US futures.
