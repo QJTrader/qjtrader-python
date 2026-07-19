@@ -195,8 +195,11 @@ Tokens are minted for you (OAuth2 client-credentials) and refreshed automaticall
 expire — you never handle them directly. Need a raw token (e.g. for the WebSocket interface)?
 `client.token(qjtrader.MARKET_DATA_SCOPE)`.
 
-Use `client.session_info()` when a local agent needs the Gateway's authoritative data and order
-environments. `client.search_universe()` and `client.describe_instrument(symbol)` provide small,
+Use `client.session_info()` when a local agent needs the Gateway's authoritative Data and Order
+Entry environments. The authenticated session also returns the market products and trading
+accounts active on this particular key. These are a restricted subset of the human user's approved
+Gateway access; changing a local setting or requesting another OAuth scope cannot widen them.
+`client.search_universe()` and `client.describe_instrument(symbol)` provide small,
 machine-readable discovery helpers so code does not have to infer product identity from prose.
 
 Both public API hosts use standard public-certificate validation. `QJ_CA_FILE` remains available
