@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.7
+
+- Added `AccessClient.request_limit_change()` and `qjtrader limit-request` so users and agents can
+  request product-specific cloud API safety-limit changes programmatically.
+- Limit requests are human-authorized and explicitly leave broker/Desktop risk controls unchanged.
+
 ## 0.5.6
 
 - Market availability now exposes the production QJ/TMX order-level TL2 rows,

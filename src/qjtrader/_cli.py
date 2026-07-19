@@ -65,6 +65,16 @@ def main(argv: list[str] | None = None) -> int:
     pa.add_argument("--extend", action="store_true", help=argparse.SUPPRESS)
     pa.add_argument("--handoff", action="store_true", help="use the browser request form instead of the signed-in API")
     pa.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
+    plr = sub.add_parser("limit-request", help="request a production cloud API safety-limit change")
+    plr.add_argument("--client-id", default="", help="production key id (omit when only one is active)")
+    plr.add_argument("--product", required=True, choices=[
+        "ca-equities", "ca-futures", "ca-options", "us-equities", "us-futures", "us-options",
+    ])
+    plr.add_argument("--max-qty", type=int)
+    plr.add_argument("--max-open", type=int)
+    plr.add_argument("--msgs-per-sec", type=float)
+    plr.add_argument("--daily-qty", type=int)
+    plr.add_argument("--reason", default="")
     paa = sub.add_parser("access-admin", help="open one request in an authenticated admin Gateway session")
     paa.add_argument("request_id", help="QJ production request id")
     paa.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
@@ -161,6 +171,18 @@ def main(argv: list[str] | None = None) -> int:
         print(url)
         if not a.no_open:
             webbrowser.open(url)
+        return 0
+    if a.cmd == "limit-request":
+        from .access import AccessClient
+        try:
+            result = AccessClient().request_limit_change(
+                client_id=a.client_id, product=a.product, max_qty=a.max_qty,
+                max_open=a.max_open, msgs_per_sec=a.msgs_per_sec,
+                daily_qty=a.daily_qty, reason=a.reason)
+        except (RuntimeError, ValueError, OSError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        print(json.dumps(result, indent=2))
         return 0
     if a.cmd in {"access-admin-list", "access-admin-decide", "access-admin-apply"}:
         from .access import AccessClient

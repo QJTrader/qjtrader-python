@@ -133,6 +133,7 @@ qjtrader init my-strategy --symbol MX:CRAU26
 qjtrader login  # browser sign-in; separate from trading API keys
 qjtrader access-status
 qjtrader access-request --plane data --market ca-equities
+qjtrader limit-request --product us-futures --max-qty 2 --daily-qty 40 --reason "two-leg strategy"
 qjtrader access-admin-list
 qjtrader access-admin-decide __prodreq__... approved --market ca-equities  # omit --market to approve the requested set
 qjtrader access-admin-apply __prodreq__...  # data keys; orders return guided account setup

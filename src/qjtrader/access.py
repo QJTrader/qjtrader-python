@@ -90,6 +90,24 @@ class AccessClient:
             "use_case": use_case, "mode": mode,
             "additional_reason": additional_reason, "credential_mode": "account"})
 
+    def request_limit_change(self, *, product: str, client_id: str = "",
+                             max_qty: int | None = None, max_open: int | None = None,
+                             msgs_per_sec: float | None = None, daily_qty: int | None = None,
+                             reason: str = "") -> dict:
+        """Request cloud API safety limits; broker/desktop risk is unchanged."""
+        if product not in MARKETS:
+            raise ValueError(f"unknown market slug: {product}")
+        values = {"max_qty": max_qty, "max_open": max_open,
+                  "msgs_per_sec": msgs_per_sec, "daily_qty": daily_qty}
+        if not any(value is not None for value in values.values()):
+            raise ValueError("provide at least one requested limit")
+        for value in (value for value in values.values() if value is not None):
+            if value <= 0:
+                raise ValueError("requested limits must be positive")
+        return self._authorized("POST", "/access/limits", {
+            "product": product, "client_id": client_id, **values, "reason": reason,
+        })
+
     def admin_requests(self) -> dict:
         return self._authorized("GET", "/admin/access/requests")
 

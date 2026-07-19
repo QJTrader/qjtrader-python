@@ -50,6 +50,30 @@ def test_programmatic_request_uses_human_token_not_machine_key(tmp_path, monkeyp
     }, "bearer": "human-token"}
 
 
+def test_programmatic_limit_request_is_human_authorized_and_layered(tmp_path, monkeypatch):
+    token_file = tmp_path / "user.json"
+    token_file.write_text('{"access_token":"human-token","client_id":"browser-client"}')
+    client = AccessClient(base_url="https://control.example", token_file=token_file)
+    seen = {}
+    monkeypatch.setattr(client, "_authorized", lambda method, path, body=None: seen.update(
+        method=method, path=path, body=body) or {"status": "pending"})
+    assert client.request_limit_change(product="us-futures", max_qty=2, daily_qty=40,
+                                       reason="two-leg strategy")["status"] == "pending"
+    assert seen["path"] == "/access/limits"
+    assert seen["body"]["product"] == "us-futures"
+    assert seen["body"]["max_qty"] == 2 and seen["body"]["daily_qty"] == 40
+
+
+def test_limit_request_cli_uses_the_same_human_authorized_api(monkeypatch, capsys):
+    seen = {}
+    monkeypatch.setattr(AccessClient, "request_limit_change", lambda self, **kwargs:
+                        seen.update(kwargs) or {"status": "pending"})
+    assert main(["limit-request", "--product", "us-futures", "--max-qty", "2",
+                 "--daily-qty", "40", "--reason", "two-leg strategy"]) == 0
+    assert seen["product"] == "us-futures" and seen["max_qty"] == 2
+    assert '"status": "pending"' in capsys.readouterr().out
+
+
 def test_admin_decision_can_narrow_approved_markets(tmp_path, monkeypatch):
     token_file = tmp_path / "user.json"
     token_file.write_text('{"access_token":"human-token","client_id":"browser-client"}')
