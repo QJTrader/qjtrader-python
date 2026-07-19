@@ -313,6 +313,27 @@ class Client:
         """Which tick-history dates exist for a symbol (honest coverage)."""
         return self.data_rest().get("/api/v1/recordings", {"symbol": symbol})
 
+    def recording_status(self, symbol: str) -> dict:
+        """How QJ remembers this symbol: ready, observed now, or continuous.
+
+        Lightweight bars are captured automatically while a production symbol
+        is observed. A continuous pin keeps a standing subscription and richer
+        market-event capture after the user's apps disconnect.
+        """
+        return self.data_rest().get("/api/v1/recording", {"symbol": symbol})
+
+    def recording_pins(self) -> dict:
+        """List this key's production symbols kept in continuous memory."""
+        return self.data_rest().get("/api/v1/recording/pins")
+
+    def pin_recording(self, symbol: str) -> dict:
+        """Keep recording a production symbol when every user app disconnects."""
+        return self.data_rest().put("/api/v1/recording/pin", {"symbol": symbol})
+
+    def unpin_recording(self, symbol: str) -> dict:
+        """Return a symbol to automatic, observation-driven recording."""
+        return self.data_rest().delete("/api/v1/recording/pin", {"symbol": symbol})
+
     def events(self, since=None, limit: int = 200) -> dict:
         """Cross-order journal history (blotter/replay/post-trade analysis)."""
         return self.orders_rest().get("/api/v1/events", {"since": since, "limit": limit})

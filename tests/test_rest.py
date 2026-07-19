@@ -41,6 +41,36 @@ def test_rest_get_raises_on_http_error():
     assert "404" in str(ei.value)
 
 
+def test_rest_put_and_delete_send_json_and_query():
+    seen = []
+
+    def opener(url, headers, method="GET", data=None):
+        seen.append((url, headers, method, data))
+        return 200, b'{"ok": true}'
+
+    ts = TokenSource("http://tok", "cid", "sec", "scope")
+    rc = RestClient("https://h:8443", ts, opener=opener)
+    rc.put("/api/v1/recording/pin", {"symbol": "CA:RY"})
+    rc.delete("/api/v1/recording/pin", {"symbol": "CA:RY"})
+    assert seen[0][2] == "PUT" and b'"CA:RY"' in seen[0][3]
+    assert seen[1][2] == "DELETE" and "symbol=CA%3ARY" in seen[1][0]
+
+
+def test_client_recording_memory_methods_hit_data_gateway():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append((url, method, data))
+        return 200, b'{"pinned": true, "symbols": ["CA:RY"]}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    assert c.recording_status("CA:RY")["pinned"] is True
+    c.recording_pins()
+    c.pin_recording("CA:RY")
+    c.unpin_recording("CA:RY")
+    assert [call[1] for call in calls] == ["GET", "GET", "PUT", "DELETE"]
+
+
 def test_client_history_hits_data_gateway():
     calls = []
 

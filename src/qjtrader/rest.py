@@ -68,6 +68,21 @@ class RestClient:
         data = json.dumps(body or {}).encode()
         return self._parse("POST", path, self._opener(url, headers, "POST", data))
 
+    def put(self, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+        url = self._base + path
+        headers = {"Authorization": f"Bearer {self._ts.token()}",
+                   "Content-Type": "application/json"}
+        data = json.dumps(body or {}).encode()
+        return self._parse("PUT", path, self._opener(url, headers, "PUT", data))
+
+    def delete(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        query = {k: v for k, v in (params or {}).items() if v is not None}
+        url = self._base + path
+        if query:
+            url += "?" + urllib.parse.urlencode(query)
+        headers = {"Authorization": f"Bearer {self._ts.token()}"}
+        return self._parse("DELETE", path, self._opener(url, headers, "DELETE", None))
+
     @staticmethod
     def _parse(method: str, path: str, resp: tuple[int, bytes]) -> dict[str, Any]:
         status, body = resp

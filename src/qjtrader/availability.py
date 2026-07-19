@@ -29,6 +29,7 @@ _AVAILABILITY: dict[str, Any] = {
         "unquoted": "a valid subscription can return null prices or remain quiet; this means unquoted now, not price zero",
         "history": "history.source is synthetic in sandbox, recorded for captured production observations, or unavailable; production never falls back to generated bars",
         "history_empty": "availability=not_recorded with an empty bars array is an honest production result, not a connectivity failure and not permission to draw a synthetic chart",
+        "market_memory": "production bars are captured automatically while a symbol is observed; a continuous pin keeps a standing watch and richer market-event capture after user apps disconnect; sandbox history is regenerated and never stored",
         "honesty_rule": "render only fields present; never infer Greeks, terms, NAV, depth, or order authority from security type",
     },
     "data_shapes": {

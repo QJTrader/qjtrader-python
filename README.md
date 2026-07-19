@@ -127,6 +127,16 @@ and US listed-option depth are not currently available. See
 History is provenance-safe: sandbox responses say `source="synthetic"`; production responses are
 `recorded` or `unavailable`. An empty `not_recorded` range is not replaced with generated bars.
 
+Production market memory follows actual attention. QJ captures lightweight bars while a user or
+agent observes a symbol. Pin only the important markets that should keep recording after every app
+disconnects:
+
+```python
+client.recording_status("CA:RY")
+client.pin_recording("CA:RY")      # continuous memory; richer market events
+client.unpin_recording("CA:RY")    # returns to observation-driven recording
+```
+
 ## Command line
 
 The package installs a `qjtrader` command:

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.10
+
+- Added demand-driven market-memory methods: recording status, durable production pins, and
+  unpinning back to automatic observation-driven bar capture.
+- Continuous pins keep a standing market-data watch and richer event capture without granting any
+  trading authority; sandbox remains reproducible and storage-free.
+
 ## 0.5.9
 
 - Market availability now documents live-sampled sparse shapes across Canadian cash listings,
