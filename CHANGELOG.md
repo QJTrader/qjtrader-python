@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.15
+
+- Made local-strategy client order IDs unique across runs and reconnects while carrying structured
+  strategy, version, run, agent, and session attribution on each order.
+- Corrected restart hydration so broker-only opening positions are included, with account-scoped
+  position rows preferred when a run is bound to an account.
+- Added collision-safe opaque order-journal paging while preserving the legacy timestamp cursor.
+
 ## 0.5.14
 
 - Added the QJ Connect run lifecycle reporter for local strategies: versioned registration,

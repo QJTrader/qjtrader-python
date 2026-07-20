@@ -18,6 +18,7 @@ import importlib.util
 import inspect
 import json
 import queue
+import re
 import threading
 import os
 import uuid
@@ -66,11 +67,14 @@ class LiveContext(Context):
     ``order``/``cancel``/``replace``/``cancel_all``)."""
 
     def __init__(self, orders: Any, strategy_tag: str = "strat",
-                 account: str = "", clock=time.time) -> None:
+                 account: str = "", clock=time.time,
+                 actor: dict[str, str] | None = None) -> None:
         self._oe = orders
         self.tag = strategy_tag
         self._account = account
         self._clock = clock
+        self.actor = dict(actor or {})
+        self._context_token = uuid.uuid4().hex[:10]
         self.params: dict[str, Any] = {}
         self._seq = 0
         self.orders: dict[str, dict[str, Any]] = {}
@@ -91,7 +95,11 @@ class LiveContext(Context):
         if cid:
             return cid
         self._seq += 1
-        return f"{self.tag}-{self._seq}"  # tag prefix => journal groups by strategy
+        # cid is a forever-idempotency key per credential. Keep it short enough
+        # for the gateway's 32-char contract while making each run/reconnect
+        # collision-proof. Human grouping comes from structured actor metadata.
+        safe_tag = re.sub(r"[^A-Za-z0-9._-]", "_", self.tag)[:12]
+        return f"{safe_tag}-{self._context_token}-{self._seq}"
 
     def _record(self, cid, sym, side, qty, price, tif):
         self.orders[cid] = {"cid": cid, "sym": sym, "side": side, "qty": qty,
@@ -100,14 +108,14 @@ class LiveContext(Context):
     def buy(self, sym, qty, price, *, tif="day", account="", cid=None):
         cid = self._cid(cid)
         self._oe.order(sym=sym, side="buy", qty=qty, price=price, tif=tif,
-                       account=account or self._account, cid=cid)
+                       account=account or self._account, cid=cid, actor=self.actor)
         self._record(cid, sym, "buy", qty, price, tif)
         return cid
 
     def sell(self, sym, qty, price, *, tif="day", account="", cid=None):
         cid = self._cid(cid)
         self._oe.order(sym=sym, side="sell", qty=qty, price=price, tif=tif,
-                       account=account or self._account, cid=cid)
+                       account=account or self._account, cid=cid, actor=self.actor)
         self._record(cid, sym, "sell", qty, price, tif)
         return cid
 
@@ -339,8 +347,14 @@ def _hydrate_context(client: Any, ctx: LiveContext) -> None:
     # they differ (some equity forms) or detail is absent (sim plane / older gateway)
     # we fall back to the fill-only net, which is never worse than before.
     detail = env.get("positions_detail") or {}
-    for sym, net in pos.items():
-        drow = detail.get(sym)
+    # Account-scoped rows are the strongest truth when this run is bound to an
+    # account. Otherwise the canonical portfolio detail is used. Union with the
+    # legacy flat map so broker-only opening positions are never omitted.
+    scoped = ((env.get("positions_by_account") or {}).get(ctx._account) or {}) if ctx._account else detail
+    symbols = set(pos) | set(scoped)
+    for sym in symbols:
+        net = pos.get(sym, 0)
+        drow = scoped.get(sym)
         try:
             n = int(drow["total_qty"]) if drow and "total_qty" in drow else int(net)
         except (TypeError, ValueError):
@@ -389,19 +403,23 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
     versioned_tag = f"{strategy_tag}.{version}"
     run_id = run_id or f"local-{uuid.uuid4().hex[:10]}"
     agent_id = agent_id or os.environ.get("QJ_AGENT_ID") or "qjtrader-python"
-    session_id = uuid.uuid4().hex[:12]
     # Synthesize bars from the live tick stream so bar-driven strategies run here
     # exactly as in the backtest (§10.1). `bar_interval_s` param overrides; 0 = off.
     bar_interval = float(params.get("bar_interval_s", 5.0))
     while not stop.is_set():
         try:
             with client.market_data() as md, client.orders() as oe:
+                session_id = uuid.uuid4().hex[:12]
+                actor = {"strategy_id": strategy_tag, "strategy_version": version,
+                         "run_id": run_id, "agent_id": agent_id,
+                         "session_id": session_id}
                 identify = getattr(md, "identify", None)
                 if callable(identify):
                     identify("|".join(["qj-run", "strategy_run", "reading",
                                        strategy_tag, version, run_id, agent_id, session_id]))
                 md.subscribe(symbols)
-                ctx = LiveContext(oe, strategy_tag=versioned_tag, account=account)
+                ctx = LiveContext(oe, strategy_tag=versioned_tag, account=account,
+                                  actor=actor)
                 ctx.params = params
                 if hydrate:
                     _hydrate_context(client, ctx)   # start from the TRUE position

@@ -255,6 +255,19 @@ def test_restart_hydration_prefers_broker_total_over_fill_only():
     assert seen == {"X": -1, "W": 4}   # broker total for X; fill-only fallback for W
 
 
+def test_restart_hydration_includes_broker_only_position():
+    from qjtrader.run import _hydrate_context
+    class Client:
+        def positions(self):
+            return {"positions": {}, "positions_detail": {
+                "CA:RY": {"broker_qty": 25, "fill_qty": 0, "total_qty": 25}}}
+    class Orders:
+        def cancel_all(self): pass
+    ctx = LiveContext(Orders(), account="")
+    _hydrate_context(Client(), ctx)
+    assert ctx.position("CA:RY") == 25
+
+
 def test_run_reconnects_on_stream_drop():
     """A dropped stream must not kill a run: merge_streams ends (dead detection) and
     run_strategy_live re-opens the connection until stop is set. If reconnect or the

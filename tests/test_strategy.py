@@ -153,21 +153,35 @@ def test_supervisor_dispatch_tags_orders_and_tracks_fills():
     oe = _FakeOrders()
     strat = _Recorder()
     ctx = LiveContext(oe, strategy_tag="mr1")
+    expected_cid = f"mr1-{ctx._context_token}-1"
     events = [
         ("md", {"type": "quote", "symbol": "MX:CRAU26", "data": {"bid": 96.9, "ask": 97.1}}),
         ("md", {"type": "trade", "symbol": "MX:CRAU26", "data": {"price": 97.0, "size": 3}}),
         ("timer", None),
-        ("oe", {"type": "exec", "cid": "mr1-1", "status": "filled",
+        ("oe", {"type": "exec", "cid": expected_cid, "status": "filled",
                 "last_qty": 1, "last_px": 97.0}),
     ]
     Supervisor(strat, ctx).run(events)
     assert strat.events[0] == "start" and strat.events[-1] == "stop"
     # order was placed with the strategy-tag cid prefix
-    assert oe.sent[0]["cid"] == "mr1-1" and oe.sent[0]["side"] == "buy"
+    assert oe.sent[0]["cid"].startswith("mr1-") and oe.sent[0]["cid"].endswith("-1")
+    assert oe.sent[0]["side"] == "buy"
     # exec updated the position book
     assert ctx.position("MX:CRAU26") == 1
     assert oe.cancel_all_called is True         # cancel-all on stop
     assert ctx.quote("MX:CRAU26") == {"bid": 96.9, "ask": 97.1}
+
+
+def test_live_context_default_cids_are_unique_across_contexts_and_carry_actor():
+    oe = _FakeOrders()
+    actor = {"strategy_id": "mr", "strategy_version": "abc", "run_id": "run-1"}
+    first = LiveContext(oe, strategy_tag="mr.abc", actor=actor)
+    second = LiveContext(oe, strategy_tag="mr.abc", actor=actor)
+    cid1 = first.buy("MX:CRAU26", 1, 97.0)
+    cid2 = second.buy("MX:CRAU26", 1, 97.0)
+    assert cid1 != cid2
+    assert len(cid1) <= 32 and len(cid2) <= 32
+    assert oe.sent[0]["actor"] == actor == oe.sent[1]["actor"]
 
 
 # ------------------------------------------------------------------- CLI

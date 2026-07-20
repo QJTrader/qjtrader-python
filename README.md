@@ -84,6 +84,14 @@ with client.orders() as oe:
     print(oe.status())      # open orders + session state
 ```
 
+`qjtrader run` supplies structured strategy, version, run, agent, and session identity on every
+order. Generated `cid` values remain unique across later runs and reconnects: a `cid` is a forever
+idempotency key, not a strategy-grouping convention. Execution events expose individual partial
+fills with stable execution identity, account, venue, and broker timestamps when supplied.
+
+For collision-safe journal paging, pass `next_cursor` from `client.events()` back using its
+`cursor=` argument. The timestamp `cursor`/`since` pair remains compatible with older clients.
+
 ### Stream market data
 
 ```python

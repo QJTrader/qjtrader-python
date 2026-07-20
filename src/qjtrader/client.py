@@ -347,9 +347,10 @@ class Client:
         """Return a symbol to automatic, observation-driven recording."""
         return self.data_rest().delete("/api/v1/recording/pin", {"symbol": symbol})
 
-    def events(self, since=None, limit: int = 200) -> dict:
+    def events(self, since=None, limit: int = 200, cursor: str | None = None) -> dict:
         """Cross-order journal history (blotter/replay/post-trade analysis)."""
-        return self.orders_rest().get("/api/v1/events", {"since": since, "limit": limit})
+        return self.orders_rest().get("/api/v1/events", {
+            "since": since, "cursor": cursor, "limit": limit})
 
     def prove(self, symbol: str = "CA:RY", *, account: str = "SIM",
               timeout: float = 10.0) -> dict:

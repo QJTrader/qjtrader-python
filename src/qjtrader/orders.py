@@ -25,7 +25,8 @@ class Orders(_Stream):
 
     def order(self, *, sym: str, side: str, qty: int, price: float,
               account: str = "", tif: str = "day", iceberg: int = 0,
-              cid: str | None = None, venue: str | None = None) -> str:
+              cid: str | None = None, venue: str | None = None,
+              actor: dict[str, str] | None = None) -> str:
         """Submit a limit order. Returns the ``cid`` (generated if not given).
 
         ``side``: ``"buy"``/``"sell"``. ``tif``: ``"day"``/``"ioc"``/``"fok"``.
@@ -42,6 +43,10 @@ class Orders(_Stream):
         }
         if venue:
             msg["venue"] = venue.upper()
+        if actor:
+            # Structured attribution survives cid format changes and lets the
+            # Gateway correlate one strategy run across orders and executions.
+            msg["actor"] = {str(k): str(v) for k, v in actor.items() if v}
         self.send(msg)
         return cid
 
