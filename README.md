@@ -120,7 +120,9 @@ from qjtrader import market_availability
 print(market_availability()["markets"]["US"])
 ```
 
-Verified examples include AAPL L1, SPY L1/L2, and selected US futures L1/L2. AAPL depth, NDX,
+Verified examples include AAPL L1, SPY L1/L2, ES futures L1/L2, and Treasury futures
+`US:@USU26` (30-Year Bond), `US:@TYU26` (10-Year Note), and `US:@FVU26` (5-Year Note).
+AAPL depth, NDX,
 and US listed-option depth are not currently available. See
 [Market Availability](https://docs.qjtrader.ai/docs/ai/availability).
 

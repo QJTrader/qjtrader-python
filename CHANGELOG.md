@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.12
+
+- Added verified US Treasury futures availability for `US:@USU26`, `US:@TYU26`, and
+  `US:@FVU26`, including production L1/L2 and order-entry evidence.
+- Documented fractional Treasury ticks in the sandbox capability contract.
+
 ## 0.5.11
 
 - Positions responses now type the account-profile, product-specific broker-risk, and broker-warning

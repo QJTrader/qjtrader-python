@@ -49,7 +49,7 @@ _AVAILABILITY: dict[str, Any] = {
         "mx_strategy": {"plain_name": "Exchange-listed multi-contract strategy", "symbol": "MX:CRAH27CRAU27", "sandbox": {"data": "synthetic package + related legs", "orders": "simulated"}, "production": {"data": "exchange quote, depth, trades, summaries, reference and status events when emitted", "orders": "2,677 standard forms supported; ratio/custom forms excluded"}},
         "us_equity_etf": {"plain_name": "US share or ETF", "symbol": "US:SPY", "sandbox": {"data": "synthetic L1/L2", "orders": "simulated"}, "production": {"data": "L1; L2 symbol-dependent (SPY proven, AAPL absent upstream)", "orders": "linked US equity accounts"}},
         "us_listed_option": {"plain_name": "US listed option", "symbol": "US:BHYP26OCT50P16", "sandbox": {"data": "synthetic L1/L2 and option metrics", "orders": "simulated"}, "production": {"data": "L1 when emitted; no L2 currently", "orders": "linked US option accounts"}},
-        "us_future": {"plain_name": "Selected US future", "symbol": "US:@ESU26", "sandbox": {"data": "synthetic L1/L2 and multi-expiry curve", "orders": "simulated"}, "production": {"data": "selected entitled roots L1/L2", "orders": "enabled families and linked futures accounts"}},
+        "us_future": {"plain_name": "Selected US future", "symbol": "US:@ESU26", "verified_symbols": ["US:@ESU26", "US:@USU26", "US:@TYU26", "US:@FVU26"], "sandbox": {"data": "synthetic L1/L2 and multi-expiry curve, including fractional Treasury ticks", "orders": "simulated"}, "production": {"data": "selected entitled roots L1/L2", "orders": "enabled families and linked futures accounts"}},
         "tsx_index": {"plain_name": "TSX index value", "symbol": None, "sandbox": {"data": "not modeled", "orders": "not applicable"}, "production": {"data": "unavailable: upstream engine/entitlement not operational", "orders": "not tradeable"}},
         "cash_bond": {"plain_name": "Cash bond", "symbol": None, "sandbox": {"data": "not exposed", "orders": "not exposed"}, "production": {"data": "desktop-modeled only", "orders": "requires a new OTC venue integration"}},
         "forex": {"plain_name": "Foreign exchange", "symbol": None, "sandbox": {"data": "not exposed", "orders": "not exposed"}, "production": {"data": "desktop-modeled only", "orders": "requires a bank or ECN integration"}},
@@ -91,11 +91,12 @@ _AVAILABILITY: dict[str, Any] = {
                 "US equities, listed options and selected futures are available "
                 "to credentials linked to the corresponding gateway accounts"
             ),
-            "examples": ["US:AAPL", "US:SPY", "US:@ESU26"],
+            "examples": ["US:AAPL", "US:SPY", "US:@ESU26", "US:@USU26", "US:@TYU26", "US:@FVU26"],
             "verified": [
                 "US:AAPL L1 and equity order entry",
                 "US:SPY L1/L2",
                 "US:@ESU26 L1/L2 and futures order entry",
+                "US:@USU26, US:@TYU26 and US:@FVU26 Treasury futures L1/L2 and order entry",
                 "US listed-option L1 and order entry on entitled contracts",
             ],
             "limitations": [

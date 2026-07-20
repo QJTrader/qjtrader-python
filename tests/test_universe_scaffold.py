@@ -13,6 +13,9 @@ from qjtrader.universe import describe_instrument, product_key, search_symbols
     ("MX:CRAH27CRAU27", "mx_strategy"),
     ("MX:RY26AUG142.5C21", "mx_option"),
     ("US:@ESU26", "us_future"),
+    ("US:@USU26", "us_future"),
+    ("US:@TYU26", "us_future"),
+    ("US:@FVU26", "us_future"),
     ("US:SPY", "us_equity_etf"),
 ])
 def test_product_key(symbol, key):
