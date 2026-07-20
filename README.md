@@ -118,6 +118,10 @@ with client.market_data() as md:
   rounded Top5 book; additive `odd_lot_bids`/`odd_lot_asks` and
   `special_lot_bids`/`special_lot_asks` expose full displayed sizes by desktop book type and must
   not be summed into Top5.
+- Treat message provenance as a safety input. Reject or quarantine `meta.stale=true`; use
+  `meta.transport_age_ms` to measure agent-to-gateway delay and
+  `meta.stale_reason == "transport_backlog"` to distinguish a delayed uplink from a disconnected
+  source.
 
 ### Check what is available
 
