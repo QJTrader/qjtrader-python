@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.12
+## 0.5.13
 
 - Added verified US Treasury futures availability for `US:@USU26`, `US:@TYU26`, and
   `US:@FVU26`, including production L1/L2 and order-entry evidence.
