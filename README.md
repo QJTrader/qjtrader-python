@@ -91,6 +91,8 @@ fills with stable execution identity, account, venue, and broker timestamps when
 
 For collision-safe journal paging, pass `next_cursor` from `client.events()` back using its
 `cursor=` argument. The timestamp `cursor`/`since` pair remains compatible with older clients.
+Use `client.executions()` for the trade-log projection: partial fills stay separate and later
+broker cancel/correct adjustments remain visible without parsing every order transition.
 
 ### Stream market data
 

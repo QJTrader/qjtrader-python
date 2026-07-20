@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.16
+
+- Added `Client.executions()` for the dedicated execution-level trade log, including broker
+  cancel/correct adjustments and collision-safe pagination.
+
 ## 0.5.15
 
 - Made local-strategy client order IDs unique across runs and reconnects while carrying structured

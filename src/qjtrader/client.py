@@ -352,6 +352,12 @@ class Client:
         return self.orders_rest().get("/api/v1/events", {
             "since": since, "cursor": cursor, "limit": limit})
 
+    def executions(self, since=None, limit: int = 200,
+                   cursor: str | None = None) -> dict:
+        """Individual fills and subsequent cancel/correct adjustments (trade log)."""
+        return self.orders_rest().get("/api/v1/executions", {
+            "since": since, "cursor": cursor, "limit": limit})
+
     def prove(self, symbol: str = "CA:RY", *, account: str = "SIM",
               timeout: float = 10.0) -> dict:
         """Run quote → resting order → cancel → journal as one sandbox proof."""
