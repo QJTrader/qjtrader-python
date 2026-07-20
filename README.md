@@ -121,7 +121,9 @@ with client.market_data() as md:
 - Treat message provenance as a safety input. Reject or quarantine `meta.stale=true`; use
   `meta.transport_age_ms` to measure agent-to-gateway delay and
   `meta.stale_reason == "transport_backlog"` to distinguish a delayed uplink from a disconnected
-  source.
+  source. An initial cached book carries `meta.cached_snapshot=true` and
+  `meta.snapshot_age_ms`; that age describes when the quiet book last changed, while
+  `transport_age_ms` describes how quickly its source update originally reached QJ.
 
 ### Check what is available
 
