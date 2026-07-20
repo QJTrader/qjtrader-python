@@ -292,7 +292,8 @@ def _cmd_run(a: argparse.Namespace) -> int:
 
     import uuid
     from .local_runs import clear_stop, record, stop_requested
-    from .run import run_strategy_live
+    from .connect import ConnectReporter
+    from .run import run_strategy_live, strategy_version
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     run_id = a.run_id or f"local-{uuid.uuid4().hex[:10]}"
@@ -302,19 +303,36 @@ def _cmd_run(a: argparse.Namespace) -> int:
         while not stop.wait(0.5):
             if stop_requested(run_id): stop.set()
     threading.Thread(target=watch_stop, daemon=True).start()
+    reporter = None
+    failed = False
+    terminal_reason = "stopped safely"
     try:
         client = _client(a)
+        strategy = _load_strategy_or_autotool(a.strategy)
+        params = _parse_params(a.param)
+        version = strategy_version(strategy, params)
+        reporter = ConnectReporter.from_environment()
+        if reporter:
+            reporter.start(run_id=run_id, strategy_id=a.tag, display_name=a.tag,
+                           version_hash=version, symbols=a.symbols, stop=stop)
         record(run_id, {"status": "running"})
         print(f"# run {run_id}: {a.strategy} on {a.symbols} (tag={a.tag}); Ctrl-C or `qjtrader stop-run {run_id}` to stop",
               file=sys.stderr)
-        run_strategy_live(client, a.strategy, symbols=a.symbols,
-                          params=_parse_params(a.param), account=a.account,
+        run_strategy_live(client, strategy, symbols=a.symbols,
+                          params=params, account=a.account,
                           strategy_tag=a.tag, stop=stop, run_id=run_id)
     except QJError as e:
+        failed = True
+        terminal_reason = str(e)
         record(run_id, {"status": "error", "error": str(e)})
         print(f"error: {e}", file=sys.stderr)
         return 1
     finally:
+        if reporter:
+            try:
+                reporter.finish(run_id, failed=failed, reason=terminal_reason)
+            except QJError as report_error:
+                print(f"# QJ Connect status warning: {report_error}", file=sys.stderr)
         if stop.is_set(): record(run_id, {"status": "stopped"})
         clear_stop(run_id)
     return 0

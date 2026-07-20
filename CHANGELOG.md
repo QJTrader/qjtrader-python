@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.14
+
+- Added the QJ Connect run lifecycle reporter for local strategies: versioned registration,
+  lease-backed heartbeats, remote safe-stop requests, and explicit stopped/failed outcomes.
+- The reporter activates only for QJ Connect-managed processes; ordinary SDK and CLI behavior
+  remains unchanged.
+
 ## 0.5.13
 
 - Added verified US Treasury futures availability for `US:@USU26`, `US:@TYU26`, and
