@@ -170,6 +170,11 @@ qjtrader limit-request --product us-futures --max-qty 2 --daily-qty 40 --reason 
 qjtrader access-admin-list
 qjtrader access-admin-decide __prodreq__... approved --market ca-equities  # omit --market to approve the requested set
 qjtrader access-admin-apply __prodreq__...  # data keys; orders return guided account setup
+
+# Dedicated data-admin credentials can inspect or change per-user feed quotas.
+# The feed enforces the admin scope; a trading/data key cannot self-elevate.
+qjtrader feed-admin-limits strategy-client --env-file ~/.qj/admin.env
+qjtrader feed-admin-limits strategy-client --max-symbols 250 --env-file ~/.qj/admin.env
 qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30 --env-file ~/.qj/strategy.env
 qjtrader order --sym MX:CRAU26 --side buy --qty 1 --price 97.00 --account SIM --tif ioc
 qjtrader status

@@ -84,6 +84,31 @@ def test_client_history_hits_data_gateway():
     assert "symbol=MX%3ACGBU26" in calls[0]
 
 
+def test_feed_admin_limits_use_admin_scope_and_encode_target():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append((url, method, data))
+        return 200, b'{"limits":{"max_symbols":250,"max_connections":3}}'
+
+    c = Client(client_id="admin", client_secret="secret", rest_opener=opener)
+    assert c.feed_limits("client/with space")["limits"]["max_symbols"] == 250
+    c.set_feed_limits("client/with space", max_symbols=250, max_connections=3)
+    assert calls[0][0].endswith("/api/v1/admin/limits/client%2Fwith%20space")
+    assert calls[0][1] == "GET"
+    assert calls[1][1] == "POST"
+    assert b'"max_symbols": 250' in calls[1][2]
+    assert c.data_admin_rest()._ts._scope == "qj-data-feed/data-admin"
+
+
+def test_feed_admin_limits_reject_invalid_local_values():
+    c = Client(client_id="admin", client_secret="secret")
+    with pytest.raises(ValueError, match="positive"):
+        c.set_feed_limits(max_symbols=0)
+    with pytest.raises(ValueError, match="provide"):
+        c.set_feed_limits()
+
+
 def test_rest_real_urllib_opener_over_http():
     """Exercise the real urllib opener + query/header build over an actual socket."""
     import http.server

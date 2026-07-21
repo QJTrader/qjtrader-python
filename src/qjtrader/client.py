@@ -41,6 +41,7 @@ DEFAULT_DATA_REST_PORT = 8443
 DEFAULT_ORDERS_REST_PORT = 8443
 
 MARKET_DATA_SCOPE = "qj-data-feed/market-data"
+DATA_ADMIN_SCOPE = "qj-data-feed/data-admin"
 ORDERS_SCOPE = "qj-data-feed/orders"
 
 
@@ -268,6 +269,44 @@ class Client:
             self._token_source(MARKET_DATA_SCOPE),
             ca_file=self._ca_file, verify=self._verify,
             opener=opener or self._rest_opener)
+
+    def data_admin_rest(self, opener=None) -> RestClient:
+        """REST client for feed administration using a dedicated admin key.
+
+        The server still enforces ``qj-data-feed/data-admin``. Calling this
+        with a normal market-data/trading key cannot elevate that key.
+        """
+        return RestClient(
+            f"https://{self._data_host}:{self._data_rest_port}",
+            self._token_source(DATA_ADMIN_SCOPE),
+            ca_file=self._ca_file, verify=self._verify,
+            opener=opener or self._rest_opener)
+
+    def feed_limits(self, user: str | None = None) -> dict[str, Any]:
+        """Read one feed user's effective limits (data-admin scope)."""
+        import urllib.parse
+        target = urllib.parse.quote(user or self._client_id, safe="")
+        return self.data_admin_rest().get(f"/api/v1/admin/limits/{target}")
+
+    def set_feed_limits(self, user: str | None = None, *,
+                        max_symbols: int | None = None,
+                        max_connections: int | None = None) -> dict[str, Any]:
+        """Set per-user feed limits; the server rejects non-admin keys."""
+        body: dict[str, int] = {}
+        if max_symbols is not None:
+            if int(max_symbols) < 1:
+                raise ValueError("max_symbols must be positive")
+            body["max_symbols"] = int(max_symbols)
+        if max_connections is not None:
+            if int(max_connections) < 1:
+                raise ValueError("max_connections must be positive")
+            body["max_connections"] = int(max_connections)
+        if not body:
+            raise ValueError("provide max_symbols and/or max_connections")
+        import urllib.parse
+        target = urllib.parse.quote(user or self._client_id, safe="")
+        return self.data_admin_rest().post(
+            f"/api/v1/admin/limits/{target}", body)
 
     def orders_rest(self, opener=None) -> RestClient:
         """REST client for the orders gateway (events journal, open orders)."""

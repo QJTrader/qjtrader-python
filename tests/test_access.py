@@ -4,6 +4,7 @@ import pytest
 
 from qjtrader.access import AccessClient, admin_access_url, production_access_url
 from qjtrader._cli import main
+from qjtrader.client import Client
 
 
 def test_access_url_contains_only_human_review_prefill():
@@ -84,3 +85,14 @@ def test_admin_decision_can_narrow_approved_markets(tmp_path, monkeypatch):
     client.admin_decide("request-1", "approved", ["ca-equities"])
     assert seen == {"method": "POST", "path": "/admin/access/requests/request-1",
                     "body": {"decision": "approved", "markets": ["ca-equities"]}}
+
+
+def test_feed_admin_limits_cli_uses_machine_admin_scope(monkeypatch, capsys):
+    seen = {}
+    monkeypatch.setattr(Client, "set_feed_limits", lambda self, user=None, **kwargs:
+                        seen.update(user=user, **kwargs) or {"limits": kwargs})
+    assert main(["feed-admin-limits", "strategy-client", "--max-symbols", "250",
+                 "--client-id", "admin", "--client-secret", "secret"]) == 0
+    assert seen == {"user": "strategy-client", "max_symbols": 250,
+                    "max_connections": None}
+    assert '"max_symbols": 250' in capsys.readouterr().out

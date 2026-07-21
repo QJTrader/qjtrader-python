@@ -87,6 +87,12 @@ def main(argv: list[str] | None = None) -> int:
     pap = sub.add_parser("access-admin-apply", help="provision an approved data request; order entry opens guided setup")
     pap.add_argument("request_id")
 
+    pfl = sub.add_parser("feed-admin-limits", help="read or set feed limits (dedicated data-admin key required)")
+    pfl.add_argument("user", nargs="?", help="target credential/user id; defaults to this admin key")
+    pfl.add_argument("--max-symbols", type=int)
+    pfl.add_argument("--max-connections", type=int)
+    _common(pfl)
+
     ps = sub.add_parser("subscribe", help="stream market data for symbols")
     ps.add_argument("symbols", nargs="+", help="e.g. CA:RY MX:CRAU26 US:@ESU26")
     ps.add_argument("--depth", type=int)
@@ -202,6 +208,20 @@ def main(argv: list[str] | None = None) -> int:
         print(url)
         if not a.no_open:
             webbrowser.open(url)
+        return 0
+    if a.cmd == "feed-admin-limits":
+        try:
+            control = _client(a)
+            if a.max_symbols is None and a.max_connections is None:
+                result = control.feed_limits(a.user)
+            else:
+                result = control.set_feed_limits(
+                    a.user, max_symbols=a.max_symbols,
+                    max_connections=a.max_connections)
+        except (QJError, ValueError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        print(json.dumps(result, indent=2))
         return 0
     if a.cmd == "backtest":
         return _cmd_backtest(a)
