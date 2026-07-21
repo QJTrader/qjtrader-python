@@ -122,8 +122,10 @@ with client.market_data() as md:
   `meta.transport_age_ms` to measure agent-to-gateway delay and
   `meta.stale_reason == "transport_backlog"` to distinguish a delayed uplink from a disconnected
   source. An initial cached book carries `meta.cached_snapshot=true` and
-  `meta.snapshot_age_ms`; that age describes when the quiet book last changed, while
-  `transport_age_ms` describes how quickly its source update originally reached QJ.
+  `meta.snapshot_age_ms`. For an exact venue-scoped TL2 book, that venue's
+  healthy heartbeat can reaffirm unchanged state, so this is time since the
+  last exact-venue change or reaffirmation; `transport_age_ms` describes relay
+  speed for that observation.
 
 ### Check what is available
 

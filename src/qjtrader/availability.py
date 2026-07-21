@@ -23,7 +23,7 @@ _AVAILABILITY: dict[str, Any] = {
     },
     "observation_contract": {
         "aggregated_book": "snapshot.data.bids/asks contain rounded Top5; Canadian equity snapshots add full-size odd_lot_* and special_lot_* views and entitled order_bids/order_asks rows; additive views must not be summed into Top5",
-        "provenance": "live messages carry meta.source, meta.venue, meta.sequence, agent_recv_ns, server_publish_ns, published_at, transport_age_ms, stale_reason and stale so consumers can detect an uplink backlog; an initial cached book also carries cached_snapshot and snapshot_age_ms so consumers do not mistake original relay latency for the age of a quiet book",
+        "provenance": "live messages carry meta.source, meta.venue, meta.sequence, agent_recv_ns, server_publish_ns, published_at, transport_age_ms, stale_reason and stale so consumers can detect an uplink backlog; an initial cached book also carries cached_snapshot and snapshot_age_ms, and exact venue-scoped TL2 heartbeats can reaffirm unchanged state without one venue validating another",
         "events": "market_event messages preserve exchange state, auctions, MOC, RFQ, reference, schedule and correction records; branch on data.event and render only fields present",
         "summary_quote": "quote.data can add last, change, fractional percent_change, volume, high, low and source",
         "unquoted": "a valid subscription can return null prices or remain quiet; this means unquoted now, not price zero",
