@@ -10,7 +10,7 @@ from typing import Any
 
 
 _AVAILABILITY: dict[str, Any] = {
-    "as_of": "2026-07-19",
+    "as_of": "2026-07-23",
     "reference": "https://docs.qjtrader.ai/docs/ai/availability",
     "access_note": (
         "Sandbox access is self-serve. Live data and production order entry "
@@ -22,8 +22,8 @@ _AVAILABILITY: dict[str, Any] = {
         "recommended_check": "Read the product's sandbox and production fields, then session_info for this credential.",
     },
     "observation_contract": {
-        "aggregated_book": "snapshot.data.bids/asks contain rounded Top5; Canadian equity snapshots add full-size odd_lot_* and special_lot_* views and entitled order_bids/order_asks rows; additive views must not be summed into Top5",
-        "provenance": "live messages carry meta.source, meta.venue, meta.sequence, agent_recv_ns, server_publish_ns, published_at, transport_age_ms, stale_reason and stale so consumers can detect an uplink backlog; an initial cached book also carries cached_snapshot and snapshot_age_ms, and exact venue-scoped TL2 heartbeats can reaffirm unchanged state without one venue validating another",
+        "aggregated_book": "snapshot.data.bids/asks contain rounded Top5; Canadian equity snapshots add full-size odd_lot_* and special_lot_* views, bounded price-window order_bids/order_asks, and depth-independent odd_order_bids/odd_order_asks with explicit odd_order_depth truncation; additive views must not be summed into Top5",
+        "provenance": "live messages carry meta.source, meta.venue, meta.sequence, agent_recv_ns, server_publish_ns, published_at, transport_age_ms, stale_reason and stale so consumers can detect an uplink backlog; an initial cached book also carries cached_snapshot and snapshot_age_ms; lightweight venue_state messages reaffirm exact-venue transport/book liveness without one venue validating another",
         "events": "market_event messages preserve exchange state, auctions, MOC, RFQ, reference, schedule and correction records; branch on data.event and render only fields present",
         "summary_quote": "quote.data can add last, change, fractional percent_change, volume, high, low and source",
         "unquoted": "a valid subscription can return null prices or remain quiet; this means unquoted now, not price zero",
@@ -33,13 +33,13 @@ _AVAILABILITY: dict[str, Any] = {
         "honesty_rule": "render only fields present; never infer Greeks, terms, NAV, depth, or order authority from security type",
     },
     "data_shapes": {
-        "equity_book": "price-aggregated rounded Top5 plus full-size odd-lot and special-lot arrays and order_bids/order_asks rows with available order attributes; sparse listings can be one-sided",
+        "equity_book": "price-aggregated rounded Top5 plus full-size odd-lot and special-lot arrays, bounded order_bids/order_asks price-window rows, and depth-independent odd_order_bids/odd_order_asks rows with stable native identity, best_odd_bid/best_odd_ask and explicit odd_order_depth truncation; sparse listings can be one-sided",
         "derivative_book": "price/size depth with source-dependent order counts and explicit implied levels where emitted",
         "option_quote": "top-of-book or unquoted state; chain analytics are separate and may be absent in production",
         "package_quote": "episodic package quote; leg prices and exchange ratios must not be assumed",
     },
     "products": {
-        "ca_equity": {"plain_name": "Canadian common share", "symbol": "CA:RY", "sandbox": {"data": "synthetic L1 + five-level venue-shaped L2", "orders": "simulated"}, "production": {"data": "official CBBO + five-level price views and entitled QJ/TMX order-level TL2 rows, consolidated or per venue", "orders": "lit, dark and smart routes; entitled accounts"}},
+        "ca_equity": {"plain_name": "Canadian common share", "symbol": "CA:RY", "sandbox": {"data": "synthetic L1 + five-level venue-shaped L2", "orders": "simulated"}, "production": {"data": "official CBBO + five-level consolidated and deeper venue price views, QJ/TMX order-level TL2 rows, and depth-independent odd-order overlays", "orders": "lit, dark and smart routes; entitled accounts"}},
         "ca_etf": {"plain_name": "Canadian exchange-traded fund", "symbol": "CA:XIU", "sandbox": {"data": "synthetic L1/L2", "orders": "simulated"}, "production": {"data": "equity feed contract", "orders": "equity routes; entitled accounts"}},
         "ca_preferred": {"plain_name": "Canadian preferred share", "symbol": "CA:ENB PR A", "sandbox": {"data": "synthetic income-like behaviour + L1/L2", "orders": "simulated"}, "production": {"data": "equity L1; L2 can be empty for a currently quoted security; terms/fundamentals not supplied", "orders": "equity routes; entitled accounts"}},
         "ca_warrant_right_unit": {"plain_name": "Canadian warrant, right or unit", "symbol": "CA:CAR UN", "sandbox": {"data": "synthetic thin/wide L1/L2", "orders": "simulated"}, "production": {"data": "equity L1; L2 may be shallow or empty; contract terms not supplied", "orders": "equity routes; entitled accounts"}},
@@ -58,13 +58,13 @@ _AVAILABILITY: dict[str, Any] = {
         "CA": {
             "sandbox": "Synthetic L1/L2 and simulated orders for stock-like listings",
             "instruments": "Canadian equities, ETFs and stock-like listings",
-            "market_data": "Official CBBO plus five-level price views and QJ/TMX order-level TL2 rows, consolidated/per venue",
+            "market_data": "Official CBBO plus five-level consolidated and deeper venue price views, QJ/TMX order-level TL2 rows, and depth-independent odd-order overlays",
             "orders": "Available across supported lit, dark and smart routes",
             "examples": ["CA:RY", "CA:RY.PT"],
             "limitations": [
                 "Only quote messages with cbbo=true are the official consolidated touch",
                 "Quote-only states are normal: a preferred or warrant may have L1 while its L2 arrays are empty",
-                "bids/asks are rounded Top5; odd_lot_*, special_lot_* and order_bids/order_asks are additive views and must not be summed into Top5",
+                "bids/asks are rounded Top5; odd_lot_*, special_lot_*, order_bids/order_asks and odd_order_bids/odd_order_asks are additive views and must not be summed into Top5",
                 "TSX index values are not currently available",
             ],
         },

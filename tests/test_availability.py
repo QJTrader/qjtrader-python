@@ -16,6 +16,8 @@ def test_availability_is_provider_neutral_and_defensive_copy():
 def test_availability_is_product_and_environment_specific():
     out = market_availability()
     assert "order_bids" in out["data_shapes"]["equity_book"]
+    assert "odd_order_bids" in out["data_shapes"]["equity_book"]
+    assert "venue_state" in out["observation_contract"]["provenance"]
     assert "provenance" in out["observation_contract"]
     assert "implied depth" in out["products"]["mx_future"]["production"]["data"]
     assert out["products"]["us_future"]["sandbox"]["data"].startswith("synthetic")
