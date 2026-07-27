@@ -53,6 +53,7 @@ class _Stream:
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
         raw = socket.create_connection((self._host, self._port), timeout=self._timeout)
+        raw.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self._sock = ctx.wrap_socket(raw, server_hostname=self._host)
         try:
             self._authenticate()

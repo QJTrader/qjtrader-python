@@ -10,7 +10,7 @@ from typing import Any
 
 
 _AVAILABILITY: dict[str, Any] = {
-    "as_of": "2026-07-23",
+    "as_of": "2026-07-24",
     "reference": "https://docs.qjtrader.ai/docs/ai/availability",
     "access_note": (
         "Sandbox access is self-serve. Live data and production order entry "
@@ -35,7 +35,7 @@ _AVAILABILITY: dict[str, Any] = {
     "data_shapes": {
         "equity_book": "price-aggregated rounded Top5 plus full-size odd-lot and special-lot arrays, bounded order_bids/order_asks price-window rows, and depth-independent odd_order_bids/odd_order_asks rows with stable native identity, best_odd_bid/best_odd_ask and explicit odd_order_depth truncation; sparse listings can be one-sided",
         "derivative_book": "price/size depth with source-dependent order counts and explicit implied levels where emitted",
-        "option_quote": "top-of-book or unquoted state; chain analytics are separate and may be absent in production",
+        "option_quote": "top-of-book plus source-shaped price/size depth when emitted; a contract can remain unquoted and chain analytics are separate",
         "package_quote": "episodic package quote; leg prices and exchange ratios must not be assumed",
     },
     "products": {
@@ -44,8 +44,8 @@ _AVAILABILITY: dict[str, Any] = {
         "ca_preferred": {"plain_name": "Canadian preferred share", "symbol": "CA:ENB PR A", "sandbox": {"data": "synthetic income-like behaviour + L1/L2", "orders": "simulated"}, "production": {"data": "equity L1; L2 can be empty for a currently quoted security; terms/fundamentals not supplied", "orders": "equity routes; entitled accounts"}},
         "ca_warrant_right_unit": {"plain_name": "Canadian warrant, right or unit", "symbol": "CA:CAR UN", "sandbox": {"data": "synthetic thin/wide L1/L2", "orders": "simulated"}, "production": {"data": "equity L1; L2 may be shallow or empty; contract terms not supplied", "orders": "equity routes; entitled accounts"}},
         "mx_future": {"plain_name": "Montréal-listed future", "symbol": "MX:CGBU26", "sandbox": {"data": "synthetic L1/L2 and multi-expiry curve", "orders": "simulated"}, "production": {"data": "L1/L2 including implied depth, summaries, RFQ and correction events when emitted", "orders": "entitled derivatives accounts"}},
-        "mx_option": {"plain_name": "Montréal-listed equity or index option", "symbol": "MX:AAPL26AUG44.5C21", "sandbox": {"data": "synthetic chain, OI, volume, IV and Greeks", "orders": "simulated"}, "production": {"data": "listed-option L1 when emitted; a zero last is not a trade; analytics source-dependent", "orders": "entitled derivatives accounts"}},
-        "mx_future_option": {"plain_name": "Option on a Montréal future", "symbol": "MX:OGB26AUG117.5C17", "sandbox": {"data": "synthetic L1/L2 and future-linked Greeks", "orders": "simulated"}, "production": {"data": "faithful but often unquoted", "orders": "instrument resolution proven; active market required"}},
+        "mx_option": {"plain_name": "Montréal-listed equity or index option", "symbol": "MX:AAPL26AUG44.5C21", "verified_depth_symbol": "MX:T26AUG14P21", "sandbox": {"data": "synthetic chain, OI, volume, IV and Greeks", "orders": "simulated"}, "production": {"data": "listed-option L1 and source-shaped price-level depth when emitted; O2 depth live-proven; a zero last is not a trade; analytics source-dependent", "orders": "entitled derivatives accounts"}},
+        "mx_future_option": {"plain_name": "Option on a Montréal future", "symbol": "MX:OGB26AUG117.5C17", "sandbox": {"data": "synthetic L1/L2 and future-linked Greeks", "orders": "simulated"}, "production": {"data": "L1 and source-shaped price-level depth when emitted; often unquoted", "orders": "instrument resolution proven; active market required"}},
         "mx_strategy": {"plain_name": "Exchange-listed multi-contract strategy", "symbol": "MX:CRAH27CRAU27", "sandbox": {"data": "synthetic package + related legs", "orders": "simulated"}, "production": {"data": "exchange quote, depth, trades, summaries, reference and status events when emitted", "orders": "2,677 standard forms supported; ratio/custom forms excluded"}},
         "us_equity_etf": {"plain_name": "US share or ETF", "symbol": "US:SPY", "sandbox": {"data": "synthetic L1/L2", "orders": "simulated"}, "production": {"data": "L1; L2 symbol-dependent (SPY proven, AAPL absent upstream)", "orders": "linked US equity accounts"}},
         "us_listed_option": {"plain_name": "US listed option", "symbol": "US:BHYP26OCT50P16", "sandbox": {"data": "synthetic L1/L2 and option metrics", "orders": "simulated"}, "production": {"data": "L1 when emitted; no L2 currently", "orders": "linked US option accounts"}},
@@ -71,9 +71,13 @@ _AVAILABILITY: dict[str, Any] = {
         "MX": {
             "sandbox": "Synthetic futures/options/strategies, chains and simulated orders",
             "instruments": "Montréal Exchange futures and listed options",
-            "market_data": "Futures L1/L2; listed-option L1",
+            "market_data": "Futures L1/L2; listed-option L1 and source-shaped price-level depth when emitted",
             "orders": "Futures and listed options available by account entitlement",
             "examples": ["MX:CGBU26", "MX:AAPL26AUG33C21"],
+            "verified": [
+                "MX futures L1/L2",
+                "MX:T26AUG14P21 listed-option L1/L2 through public streaming and REST depth",
+            ],
             "limitations": [
                 "Some thin or seasonal contracts may have no current quote",
                 "Depth can be one level or absent; render the returned shape instead of assuming five levels",

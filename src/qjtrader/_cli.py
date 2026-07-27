@@ -84,8 +84,19 @@ def main(argv: list[str] | None = None) -> int:
     pad.add_argument("--market", action="append", default=None, choices=[
         "ca-equities", "ca-futures", "ca-options", "us-equities", "us-futures", "us-options",
     ], help="approved market subset (repeatable; defaults to all requested markets)")
-    pap = sub.add_parser("access-admin-apply", help="provision an approved data request; order entry opens guided setup")
+    pap = sub.add_parser(
+        "access-admin-apply",
+        help="provision an approved Data or Order Entry request",
+    )
     pap.add_argument("request_id")
+    pap.add_argument("--trader-profile",
+                     help="existing AdmServ trader profile for Order Entry")
+    pap.add_argument("--account", action="append", default=[],
+                     help="authorized brokerage account (repeatable)")
+    pap.add_argument("--max-qty", type=int)
+    pap.add_argument("--max-open", type=int)
+    pap.add_argument("--msgs-per-sec", type=float)
+    pap.add_argument("--daily-qty", type=int)
 
     pfl = sub.add_parser("feed-admin-limits", help="read or set feed limits (dedicated data-admin key required)")
     pfl.add_argument("user", nargs="?", help="target credential/user id; defaults to this admin key")
@@ -96,8 +107,22 @@ def main(argv: list[str] | None = None) -> int:
     ps = sub.add_parser("subscribe", help="stream market data for symbols")
     ps.add_argument("symbols", nargs="+", help="e.g. CA:RY MX:CRAU26 US:@ESU26")
     ps.add_argument("--depth", type=int)
+    ps.add_argument("--all-venues", action="store_true",
+                    help="expand bare Canadian roots to every entitled venue")
     ps.add_argument("--watch", type=float, default=60.0)
     _common(ps)
+
+    pdd = sub.add_parser(
+        "data-doctor",
+        help="read-only market-data freshness, completeness, and timing check",
+    )
+    pdd.add_argument("symbols", nargs="+", help="e.g. CA:AW MX:CRAU26")
+    pdd.add_argument("--all-venues", action="store_true",
+                     help="include every entitled Canadian venue")
+    pdd.add_argument("--depth", type=int, default=10)
+    pdd.add_argument("--duration", type=float, default=10.0)
+    pdd.add_argument("--output", help="also save the JSON report to this file")
+    _common(pdd)
 
     po = sub.add_parser("order", help="submit a limit order")
     po.add_argument("--sym", required=True)
@@ -195,7 +220,16 @@ def main(argv: list[str] | None = None) -> int:
         control = AccessClient()
         if a.cmd == "access-admin-list": result = control.admin_requests()
         elif a.cmd == "access-admin-decide": result = control.admin_decide(a.request_id, a.decision, a.market)
-        else: result = control.admin_apply(a.request_id)
+        else:
+            result = control.admin_apply(
+                a.request_id,
+                trader_profile=a.trader_profile or "",
+                accounts=a.account,
+                max_qty=a.max_qty,
+                max_open=a.max_open,
+                msgs_per_sec=a.msgs_per_sec,
+                daily_qty=a.daily_qty,
+            )
         print(json.dumps(result, indent=2)); return 0
     if a.cmd == "access-admin":
         import webbrowser
@@ -239,12 +273,32 @@ def main(argv: list[str] | None = None) -> int:
         if a.cmd == "subscribe":
             with client.market_data() as md:
                 print(f"# authenticated as {md.user}; subscribing {a.symbols}", file=sys.stderr)
-                md.subscribe(a.symbols, depth=a.depth)
+                md.subscribe(
+                    a.symbols,
+                    depth=a.depth,
+                    venues="all_entitled" if a.all_venues else None,
+                )
                 try:
                     for msg in md.messages(timeout=a.watch):
                         print(json.dumps(msg))
                 except ConnectionClosed:
                     print("# server closed the connection", file=sys.stderr)
+        elif a.cmd == "data-doctor":
+            from pathlib import Path
+            from .data_doctor import inspect_stream
+            with client.market_data() as md:
+                report = inspect_stream(
+                    md,
+                    a.symbols,
+                    duration=a.duration,
+                    depth=a.depth,
+                    all_venues=a.all_venues,
+                )
+            rendered = json.dumps(report, indent=2)
+            print(rendered)
+            if a.output:
+                Path(a.output).write_text(rendered + "\n", encoding="utf-8")
+            return 0 if report["status"] == "READY" else 2
         elif a.cmd == "order":
             with client.orders() as oe:
                 print(f"# authenticated as {oe.user}", file=sys.stderr)

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.17
+
+- Added `subscribe_all_venues()` and `venues="all_entitled"` support so one Canadian
+  logical root can receive consolidated plus every entitled venue book.
+- Added the read-only `qjtrader data-doctor` diagnostic for subscription expansion,
+  CBBO, venue readiness, freshness distributions, stale data, and truncation.
+- Enabled TCP_NODELAY on the streaming socket and expanded human-admin order-entry
+  provisioning arguments for authoritative trader profile, accounts, and initial limits.
+
 ## 0.5.16
 
 - Added `Client.executions()` for the dedicated execution-level trade log, including broker

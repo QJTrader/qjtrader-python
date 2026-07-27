@@ -30,7 +30,8 @@ def top_of_book(message: dict) -> dict:
 class MarketData(_Stream):
     """A live market-data connection. Obtain one from :meth:`qjtrader.Client.market_data`."""
 
-    def subscribe(self, symbols: Iterable[str], depth: int | None = None) -> None:
+    def subscribe(self, symbols: Iterable[str], depth: int | None = None,
+                  venues: str | None = None) -> None:
         """Subscribe to namespaced symbols, e.g. ``["CA:RY", "MX:CRAU26", "US:@ESU26"]``.
 
         A bare equity symbol (``CA:RY``) is the consolidated book; add a venue
@@ -39,7 +40,22 @@ class MarketData(_Stream):
         msg: dict[str, object] = {"action": "subscribe", "symbols": list(symbols)}
         if depth is not None:
             msg["depth"] = depth
+        if venues is not None:
+            if venues != "all_entitled":
+                raise ValueError("venues must be 'all_entitled'")
+            msg["venues"] = venues
         self.send(msg)
+
+    def subscribe_all_venues(self, symbols: Iterable[str],
+                             depth: int | None = None) -> None:
+        """Subscribe to each Canadian root's official channel and every
+        entitled client-addressable venue.
+
+        The server reports the exact expansion in a ``subscription_plan``
+        message. Venue-scoped symbols retain independent freshness and
+        truncation state while consuming one logical root quota slot.
+        """
+        self.subscribe(symbols, depth=depth, venues="all_entitled")
 
     def unsubscribe(self, symbols: Iterable[str]) -> None:
         self.send({"action": "unsubscribe", "symbols": list(symbols)})

@@ -48,7 +48,7 @@ client = qjtrader.Client.from_env_file("~/.qj/m3alpha-csu.env")
 
 ```bash
 chmod 600 ~/.qj/m3alpha-csu.env
-qjtrader subscribe CA:CSU CA:CSU.PT CA:CSU.TO --depth 5 --watch 30 \
+qjtrader subscribe CA:CSU --all-venues --depth 10 --watch 30 \
   --env-file ~/.qj/m3alpha-csu.env
 ```
 
@@ -169,13 +169,17 @@ qjtrader access-request --plane data --market ca-equities
 qjtrader limit-request --product us-futures --max-qty 2 --daily-qty 40 --reason "two-leg strategy"
 qjtrader access-admin-list
 qjtrader access-admin-decide __prodreq__... approved --market ca-equities  # omit --market to approve the requested set
-qjtrader access-admin-apply __prodreq__...  # data keys; orders return guided account setup
+qjtrader access-admin-apply __prodreq__... \
+  --trader-profile M3ALPHA --account 12345 \
+  --max-order-qty 99 --max-open-orders 12 \
+  --max-messages-per-second 25 --max-daily-qty 5000
 
 # Dedicated data-admin credentials can inspect or change per-user feed quotas.
 # The feed enforces the admin scope; a trading/data key cannot self-elevate.
 qjtrader feed-admin-limits strategy-client --env-file ~/.qj/admin.env
 qjtrader feed-admin-limits strategy-client --max-symbols 250 --env-file ~/.qj/admin.env
 qjtrader subscribe CA:RY MX:CRAU26 US:@ESU26 --watch 30 --env-file ~/.qj/strategy.env
+qjtrader data-doctor CA:RY --all-venues --duration 30 --env-file ~/.qj/strategy.env
 qjtrader order --sym MX:CRAU26 --side buy --qty 1 --price 97.00 --account SIM --tif ioc
 qjtrader status
 qjtrader cancel --orig qj-abc123

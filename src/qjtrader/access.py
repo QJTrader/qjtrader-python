@@ -120,8 +120,31 @@ class AccessClient:
             body["markets"] = markets
         return self._authorized("POST", f"/admin/access/requests/{request_id}", body)
 
-    def admin_apply(self, request_id: str) -> dict:
-        return self._authorized("POST", f"/admin/access/requests/{request_id}/apply", {})
+    def admin_apply(self, request_id: str, *, trader_profile: str = "",
+                    accounts: list[str] | None = None,
+                    max_qty: int | None = None,
+                    max_open: int | None = None,
+                    msgs_per_sec: float | None = None,
+                    daily_qty: int | None = None) -> dict:
+        """Provision an approved request as a signed-in human administrator.
+
+        Production Order Entry requires an authoritative trader profile and
+        accounts already present on that profile. The server revalidates route
+        compatibility and allocates only a pre-provisioned FIX session.
+        """
+        body = {
+            "trader_profile": trader_profile,
+            "accounts": accounts or [],
+            "max_qty": max_qty,
+            "max_open": max_open,
+            "msgs_per_sec": msgs_per_sec,
+            "daily_qty": daily_qty,
+        }
+        return self._authorized(
+            "POST", f"/admin/access/requests/{request_id}/apply",
+            {key: value for key, value in body.items()
+             if value not in (None, "", [])},
+        )
 
     def _authorized(self, method: str, path: str, body: dict | None = None) -> dict:
         tokens = self._load()

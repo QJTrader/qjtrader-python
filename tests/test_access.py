@@ -87,6 +87,36 @@ def test_admin_decision_can_narrow_approved_markets(tmp_path, monkeypatch):
                     "body": {"decision": "approved", "markets": ["ca-equities"]}}
 
 
+def test_admin_apply_order_entry_carries_profile_accounts_and_limits(tmp_path, monkeypatch):
+    token_file = tmp_path / "user.json"
+    token_file.write_text('{"access_token":"human-token","client_id":"browser-client"}')
+    client = AccessClient(base_url="https://control.example", token_file=token_file)
+    seen = {}
+    monkeypatch.setattr(client, "_authorized", lambda method, path, body=None: seen.update(
+        method=method, path=path, body=body) or {"status": "fulfilled"})
+    client.admin_apply(
+        "__prodreq__owner__orders",
+        trader_profile="VV1",
+        accounts=["ABC123"],
+        max_qty=10,
+        max_open=20,
+        msgs_per_sec=5,
+        daily_qty=200,
+    )
+    assert seen == {
+        "method": "POST",
+        "path": "/admin/access/requests/__prodreq__owner__orders/apply",
+        "body": {
+            "trader_profile": "VV1",
+            "accounts": ["ABC123"],
+            "max_qty": 10,
+            "max_open": 20,
+            "msgs_per_sec": 5,
+            "daily_qty": 200,
+        },
+    }
+
+
 def test_feed_admin_limits_cli_uses_machine_admin_scope(monkeypatch, capsys):
     seen = {}
     monkeypatch.setattr(Client, "set_feed_limits", lambda self, user=None, **kwargs:

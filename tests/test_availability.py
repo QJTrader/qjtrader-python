@@ -31,3 +31,6 @@ def test_availability_is_product_and_environment_specific():
     assert "never falls back" in out["observation_contract"]["history"]
     assert "not_recorded" in out["observation_contract"]["history_empty"]
     assert "source-dependent" in out["data_shapes"]["derivative_book"]
+    assert "price/size depth" in out["data_shapes"]["option_quote"]
+    assert "listed-option L1 and source-shaped price-level depth" in out["markets"]["MX"]["market_data"]
+    assert out["products"]["mx_option"]["verified_depth_symbol"] == "MX:T26AUG14P21"
