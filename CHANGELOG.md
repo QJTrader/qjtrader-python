@@ -5,7 +5,8 @@
 - Added `subscribe_all_venues()` and `venues="all_entitled"` support so one Canadian
   logical root can receive consolidated plus every entitled venue book.
 - Added the read-only `qjtrader data-doctor` diagnostic for subscription expansion,
-  CBBO, venue readiness, freshness distributions, stale data, and truncation.
+  CBBO, venue readiness, freshness distributions, cached-snapshot age, stale data,
+  and truncation.
 - Enabled TCP_NODELAY on the streaming socket and expanded human-admin order-entry
   provisioning arguments for authoritative trader profile, accounts, and initial limits.
 

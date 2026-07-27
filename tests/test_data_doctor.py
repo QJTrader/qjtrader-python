@@ -36,6 +36,8 @@ def test_data_doctor_separates_gateway_and_customer_timing():
                 "transport_age_ms": 12.5,
                 "server_publish_ns": published,
                 "stale": False,
+                "cached_snapshot": True,
+                "snapshot_age_ms": 1234.5,
             },
         },
         {
@@ -68,6 +70,8 @@ def test_data_doctor_separates_gateway_and_customer_timing():
     assert report["symbols"]["CA:AW"]["official_cbbo"] == 1
     assert report["symbols"]["CA:AW"]["transport_age_ms"]["p50"] == 12.5
     assert report["symbols"]["CA:AW"]["customer_receive_age_ms"]["p50"] == 20.0
+    assert report["symbols"]["CA:AW"]["cached_snapshots"] == 1
+    assert report["symbols"]["CA:AW"]["max_snapshot_age_ms"] == 1234.5
 
 
 def test_data_doctor_fails_closed_on_stale_truncated_or_missing_data():

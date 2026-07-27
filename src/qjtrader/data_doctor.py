@@ -44,6 +44,8 @@ def inspect_stream(stream: Any, symbols: Iterable[str], *,
         "official_cbbo": 0,
         "stale_messages": 0,
         "truncated_messages": 0,
+        "cached_snapshots": 0,
+        "max_snapshot_age_ms": None,
         "venue_state": None,
         "transport_age_ms": [],
         "customer_receive_age_ms": [],
@@ -78,6 +80,14 @@ def inspect_stream(stream: Any, symbols: Iterable[str], *,
             row["official_cbbo"] += 1
         if meta.get("stale") is True:
             row["stale_messages"] += 1
+        if meta.get("cached_snapshot") is True:
+            row["cached_snapshots"] += 1
+            snapshot_age = meta.get("snapshot_age_ms")
+            if isinstance(snapshot_age, (int, float)) and snapshot_age >= 0:
+                row["max_snapshot_age_ms"] = max(
+                    float(snapshot_age),
+                    float(row["max_snapshot_age_ms"] or 0),
+                )
         odd_depth = data.get("odd_order_depth") or {}
         if odd_depth.get("bid_truncated") or odd_depth.get("ask_truncated"):
             row["truncated_messages"] += 1
@@ -129,6 +139,8 @@ def inspect_stream(stream: Any, symbols: Iterable[str], *,
         "timing_note": (
             "transport_age_ms is QJ source-to-Gateway age; "
             "customer_receive_age_ms also includes network and local receipt "
-            "and assumes synchronized clocks"
+            "and assumes synchronized clocks. For cached snapshots it includes "
+            "the separately reported snapshot age; use venue_state to decide "
+            "whether an unchanged venue book has been reaffirmed current"
         ),
     }
