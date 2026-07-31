@@ -157,6 +157,22 @@ client.pin_recording("CA:RY")      # continuous memory; richer market events
 client.unpin_recording("CA:RY")    # returns to observation-driven recording
 ```
 
+Read recorded sub-second quotes, trades and Level 2 snapshots after pinning:
+
+```python
+client.pin_recording("MX:CGBU26")
+events = client.market_events(
+    "MX:CGBU26",
+    frm="2026-07-31T14:59:00-04:00",
+    to="2026-07-31T15:00:00-04:00",
+    types=["trade", "quote", "level2"],
+)
+```
+
+MX does not disseminate a CGB/SXF auction-imbalance message. For SXF Basis Trade
+on Close flow, record the separate `MX:BSF<month><year>` book alongside the
+ordinary `MX:SXF<month><year>` contract.
+
 ## Command line
 
 The package installs a `qjtrader` command:

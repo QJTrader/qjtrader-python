@@ -84,6 +84,21 @@ def test_client_history_hits_data_gateway():
     assert "symbol=MX%3ACGBU26" in calls[0]
 
 
+def test_client_market_events_hits_data_gateway_with_filters():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append(url)
+        return 200, b'{"events": [], "truncated": false}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    c.market_events("MX:BSFU26", frm="2026-07-31T19:59:00Z",
+                    to="2026-07-31T20:00:00Z", types=["trade", "level2"], limit=1000)
+    assert "data-feed.qjtrader.ai:8443/api/v1/market-events" in calls[0]
+    assert "symbol=MX%3ABSFU26" in calls[0]
+    assert "types=trade%2Clevel2" in calls[0] and "limit=1000" in calls[0]
+
+
 def test_feed_admin_limits_use_admin_scope_and_encode_target():
     calls = []
 

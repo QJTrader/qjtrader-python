@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.18
+
+- Added `Client.market_events()` for recorded production quotes, trades, Level 2
+  snapshots, and exchange events. This enables sub-second close and order-book
+  research; callers can filter event types and detect bounded-result truncation.
+- Documented MX closing-flow semantics: CGB/SXF regular flow has no auction-
+  imbalance message, while the SXF Basis Trade on Close book uses root `BSF`.
+
 ## 0.5.17
 
 - Added `subscribe_all_venues()` and `venues="all_entitled"` support so one Canadian

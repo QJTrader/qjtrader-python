@@ -327,6 +327,19 @@ class Client:
         return self.data_rest().get("/api/v1/history", {
             "symbol": symbol, "interval": interval, "from": frm, "to": to, "limit": limit})
 
+    def market_events(self, symbol: str, frm=None, to=None,
+                      types: list[str] | tuple[str, ...] | None = None,
+                      limit: int = 5000) -> dict:
+        """Recorded quotes, trades, depth and exchange events for a symbol.
+
+        Raw production events exist only after the symbol is continuously pinned
+        (or otherwise protected for raw capture).  ``truncated`` tells callers to
+        split a large time window.  This is read-only market data.
+        """
+        return self.data_rest().get("/api/v1/market-events", {
+            "symbol": symbol, "from": frm, "to": to,
+            "types": ",".join(types) if types else None, "limit": limit})
+
     def stats(self, symbol: str, interval: str = "1m", window: float = 3600.0) -> dict:
         """Server-computed digest plus the same history provenance fields."""
         return self.data_rest().get("/api/v1/stats", {
