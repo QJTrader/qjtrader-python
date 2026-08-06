@@ -379,6 +379,26 @@ class Client:
         return self.data_rest().get("/api/v1/auction-imbalance", {
             "symbol": symbol, "from": frm, "to": to, "limit": limit})
 
+    def settlement_flow(self, product: str, contract: str | None = None,
+                        frm=None, to=None, limit: int = 5000) -> dict:
+        """Normalized MX exchange settlement-summary history.
+
+        Intended for rates-curve and index-futures close research. ``product``
+        is a root such as ``CGB`` or ``CRA``; omit ``contract`` to scan the
+        quarterly contracts covered by the requested date range.
+        """
+        return self.data_rest().get("/api/v1/settlement-flow", {
+            "product": product, "contract": contract, "from": frm, "to": to,
+            "limit": limit})
+
+    def recording_policy(self, symbol: str | None = None) -> dict:
+        """Explain the active house/scheduled recording decision.
+
+        With ``symbol``, returns whether it is active now and the exact policy
+        reasons. Explicit client pins remain additive to this house policy.
+        """
+        return self.data_rest().get("/api/v1/recording-policy", {"symbol": symbol})
+
     def stats(self, symbol: str, interval: str = "1m", window: float = 3600.0) -> dict:
         """Server-computed digest plus the same history provenance fields."""
         return self.data_rest().get("/api/v1/stats", {

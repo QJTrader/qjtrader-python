@@ -156,6 +156,33 @@ def test_client_auction_imbalance_hits_normalized_history_endpoint():
     assert "symbol=CA%3ARY" in calls[0] and "limit=100" in calls[0]
 
 
+def test_client_settlement_flow_hits_normalized_history_endpoint():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append(url)
+        return 200, b'{"records": [], "source": "unavailable"}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    c.settlement_flow("CGB", contract="U26", frm="2026-08-06T00:00:00Z",
+                      to="2026-08-07T00:00:00Z", limit=100)
+    assert "data-feed.qjtrader.ai:8443/api/v1/settlement-flow" in calls[0]
+    assert "product=CGB" in calls[0] and "contract=U26" in calls[0]
+
+
+def test_client_recording_policy_explains_symbol():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append(url)
+        return 200, b'{"active_now": true, "reasons": ["scheduled:tsx60_moc"]}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    result = c.recording_policy("CA:RY")
+    assert result["active_now"] is True
+    assert "/api/v1/recording-policy" in calls[0] and "symbol=CA%3ARY" in calls[0]
+
+
 def test_feed_admin_limits_use_admin_scope_and_encode_target():
     calls = []
 

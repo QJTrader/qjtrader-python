@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.22
+
+- Added `Client.settlement_flow()` for normalized MX daily settlement summaries
+  across recorded quarterly contracts, including provenance, volume, open
+  interest, and official external reference values when disseminated.
+- Added `Client.recording_policy()` to explain active standing, scheduled, and
+  client-additive recording decisions.
+
 ## 0.5.21
 
 - Added the QJ Connect loopback token broker so supervised local projects use

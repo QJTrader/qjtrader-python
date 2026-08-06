@@ -179,6 +179,11 @@ close = client.sxf_close_flow(
 auction = client.auction_imbalance(
     "CA:RY", frm="2026-08-04T19:50:00Z", to="2026-08-04T20:01:00Z"
 )
+
+# Canadian rates/index-futures settlement history.
+settlements = client.settlement_flow(
+    "CGB", frm="2026-08-06T00:00:00Z", to="2026-08-07T00:00:00Z"
+)
 ```
 
 MX does not disseminate a CGB/SXF auction-imbalance message. For SXF Basis Trade
