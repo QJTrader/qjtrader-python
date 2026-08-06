@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.24
+
+- Observation-only live strategies can now set `allow_orders=false` and run
+  without opening an Order Entry connection or requesting an Order Entry token.
+  The strategy context fails closed if order methods are attempted.
+
 ## 0.5.23
 
 - Replaced pricing-ambiguous sandbox marketing copy with precise self-serve

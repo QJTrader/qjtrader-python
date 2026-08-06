@@ -1,6 +1,9 @@
 """Live bar synthesis (run.Supervisor with bar_interval): bar-driven strategies
 must run on the live/paper tick stream exactly as in the backtest."""
 import threading
+import time
+
+import pytest
 
 from qjtrader.run import LiveContext, Supervisor, _BarBuilder, run_strategy_live, strategy_version
 from qjtrader.strategy import Strategy
@@ -319,3 +322,57 @@ def test_run_reconnects_on_stream_drop():
     t.join(timeout=5)
     assert not t.is_alive(), "run did not terminate — reconnect/merge hang"
     assert connects[0] >= 3, f"expected multiple reconnects, got {connects[0]}"
+
+
+def test_observation_only_strategy_never_opens_order_entry():
+    stop = threading.Event()
+    seen = []
+
+    class MarketData:
+        environment = "sandbox"
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def subscribe(self, symbols): seen.append(("subscribed", symbols))
+        def messages(self, timeout=None):
+            yield {"type": "trade", "symbol": "MX:CGBU26", "data": {"price": 112.5}}
+            while not stop.is_set():
+                time.sleep(0.001)
+
+    class Client:
+        def market_data(self): return MarketData()
+        def orders(self): raise AssertionError("Order Entry must not open")
+
+    class Observer(Strategy):
+        def on_trade(self, _ctx, event):
+            seen.append(("trade", event["symbol"]))
+            stop.set()
+
+    run_strategy_live(Client(), Observer(), symbols=["MX:CGBU26"],
+                      params={"allow_orders": "false"}, stop=stop,
+                      reconnect=False)
+    assert seen == [("subscribed", ["MX:CGBU26"]), ("trade", "MX:CGBU26")]
+
+
+def test_observation_only_context_fails_closed_if_strategy_attempts_order():
+    stop = threading.Event()
+
+    class MarketData:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def subscribe(self, _symbols): pass
+        def messages(self, timeout=None):
+            while not stop.is_set():
+                time.sleep(0.001)
+
+    class Client:
+        def market_data(self): return MarketData()
+        def orders(self): raise AssertionError("Order Entry must not open")
+
+    class Unsafe(Strategy):
+        def on_start(self, ctx):
+            ctx.buy("MX:CGBU26", 1, 100)
+
+    with pytest.raises(Exception, match="no Order Entry capability"):
+        run_strategy_live(Client(), Unsafe(), symbols=["MX:CGBU26"],
+                          params={"allow_orders": False}, stop=stop,
+                          reconnect=False)

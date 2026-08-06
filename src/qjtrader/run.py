@@ -326,6 +326,50 @@ def merge_streams(md: Any, oe: Any, *, timer_s: float = 1.0,
             yield ("timer", None)
 
 
+def merge_market_data(md: Any, *, timer_s: float = 1.0,
+                      stop: threading.Event | None = None,
+                      window_s: float = 3600.0) -> Iterator[tuple[str, Any]]:
+    """Drive a Strategy from market data without opening Order Entry.
+
+    This is the safe live adapter for observation, analytics and UI projects whose
+    reviewed capability explicitly excludes orders. It retains timer callbacks and
+    reconnect semantics without manufacturing an Order Entry stream.
+    """
+    stop = stop or threading.Event()
+    q: "queue.Queue[tuple[str, Any]]" = queue.Queue()
+    dead = threading.Event()
+
+    def pump() -> None:
+        try:
+            while not stop.is_set():
+                for msg in md.messages(timeout=window_s):
+                    q.put(("md", msg))
+                    if stop.is_set():
+                        return
+        finally:
+            dead.set()
+
+    threading.Thread(target=pump, daemon=True).start()
+    while not stop.is_set() and not dead.is_set():
+        try:
+            yield q.get(timeout=timer_s)
+        except queue.Empty:
+            yield ("timer", None)
+
+
+class _DeniedOrders:
+    """Context-compatible fail-closed Order Entry surface."""
+
+    @staticmethod
+    def _denied(*_args, **_kwargs):
+        raise QJError("This run has no Order Entry capability. Request and review it before placing orders.")
+
+    order = cancel = replace = _denied
+
+    def cancel_all(self):
+        return None
+
+
 def _hydrate_context(client: Any, ctx: LiveContext) -> None:
     """On (re)connect, seed the context's position book from the gateway's REAL
     positions and clear any orders left working on the session, so a restarted run
@@ -383,9 +427,10 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
                       agent_id: str | None = None) -> None:
     """Run a strategy against a live/paper credential (rung 3).
 
-    `strategy` may be a Strategy instance or a path to a .py file. Opens market
-    data + order entry, subscribes `symbols`, and dispatches until `stop` is set
-    (wire it to SIGINT in the CLI). Orders are tagged with `strategy_tag`.
+    `strategy` may be a Strategy instance or a path to a .py file. It always opens
+    market data. Order Entry opens only when ``params["allow_orders"]`` is true;
+    an explicit false supplies a fail-closed context and never requests an Order
+    Entry token. Orders are tagged with `strategy_tag`.
 
     With `reconnect` (default), a dropped connection (e.g. a gateway restart) is not
     fatal: the run backs off and re-opens the streams, re-running `on_start`, until
@@ -396,6 +441,8 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
         strategy = load_strategy(strategy)
     stop = stop or threading.Event()
     params = params or {}
+    allow_orders_value = params.get("allow_orders", True)
+    orders_enabled = allow_orders_value if isinstance(allow_orders_value, bool) else str(allow_orders_value).strip().lower() in {"1", "true", "yes", "on"}
     # Fold the immutable strategy-version hash into the tag (§10.5 v5): orders are
     # cid'd `<tag>.<ver>-<seq>`, so the gateway's per-tag position/envelope/journal
     # all scope to the exact version — promotion is granted to a version, not a name.
@@ -408,7 +455,7 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
     bar_interval = float(params.get("bar_interval_s", 5.0))
     while not stop.is_set():
         try:
-            with client.market_data() as md, client.orders() as oe:
+            with client.market_data() as md:
                 session_id = uuid.uuid4().hex[:12]
                 actor = {"strategy_id": strategy_tag, "strategy_version": version,
                          "run_id": run_id, "agent_id": agent_id,
@@ -418,14 +465,19 @@ def run_strategy_live(client: Any, strategy: Strategy | str, *,
                     identify("|".join(["qj-run", "strategy_run", "reading",
                                        strategy_tag, version, run_id, agent_id, session_id]))
                 md.subscribe(symbols)
+                oe = client.orders() if orders_enabled else _DeniedOrders()
                 ctx = LiveContext(oe, strategy_tag=versioned_tag, account=account,
                                   actor=actor)
                 ctx.params = params
-                if hydrate:
+                if hydrate and orders_enabled:
                     _hydrate_context(client, ctx)   # start from the TRUE position
-                # merge_streams returns when stop is set (clean) or a stream drops.
-                Supervisor(strategy, ctx, bar_interval=bar_interval).run(
-                    merge_streams(md, oe, timer_s=timer_s, stop=stop))
+                if orders_enabled:
+                    with oe:
+                        Supervisor(strategy, ctx, bar_interval=bar_interval).run(
+                            merge_streams(md, oe, timer_s=timer_s, stop=stop))
+                else:
+                    Supervisor(strategy, ctx, bar_interval=bar_interval).run(
+                        merge_market_data(md, timer_s=timer_s, stop=stop))
         except Exception:
             if not reconnect or stop.is_set():
                 raise
