@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.23
+
+- Replaced pricing-ambiguous sandbox marketing copy with precise self-serve
+  synthetic-sandbox language and an explicit paid Production boundary.
+
 ## 0.5.22
 
 - Added `Client.settlement_flow()` for normalized MX daily settlement summaries

@@ -1,7 +1,8 @@
 """qjtrader — the official Python client for the QJ Trader AI Trading APIs.
 
 Stream entitled Canadian, Montréal, and selected US market data and send orders over one authenticated
-connection. Get a free sandbox key (no approval) at https://gateway.qjtrader.ai
+connection. Get a self-serve sandbox key at https://gateway.qjtrader.ai;
+paid Production service is contracted separately.
 and set ``QJ_CLIENT_ID`` / ``QJ_CLIENT_SECRET``:
 
     import qjtrader

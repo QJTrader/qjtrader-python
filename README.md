@@ -14,9 +14,10 @@ lit exchange and dark pool) over one authenticated connection.
 pip install qjtrader
 ```
 
-- **Free sandbox, no approval.** Create an account at [gateway.qjtrader.ai](https://gateway.qjtrader.ai),
+- **Self-serve synthetic sandbox.** Create an account at [gateway.qjtrader.ai](https://gateway.qjtrader.ai),
   click *Create sandbox credential*, and you get a `client_id` + `client_secret` that stream
   **simulated** data and return **simulated** fills — in the *exact production wire format*, 24/7.
+  Paid Production service is contracted and entitled separately.
 - **Sandbox → production without a code change.** Request licensed data and order authority
   independently. A human admin approves the scope, then separately provisions a dedicated
   least-privilege key; the SDK and sandbox credential cannot self-promote.
