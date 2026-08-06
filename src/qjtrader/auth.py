@@ -61,3 +61,48 @@ class TokenSource:
         self._token = data["access_token"]
         self._expires_at = time.time() + float(data.get("expires_in", 3600))
         return self._token
+
+
+class BrokerTokenSource:
+    """Fetch capability-limited tokens from QJ Connect on loopback.
+
+    QJ Connect keeps the account credential in the operating-system vault. A
+    supervised child receives only a loopback URL and a per-run bearer key.
+    The broker refuses scopes that were not approved for that project/run.
+    """
+
+    def __init__(self, broker_url: str, broker_key: str, scope: str) -> None:
+        self._url = broker_url.rstrip("/")
+        self._key = broker_key
+        self._scope = scope
+        self._token: str | None = None
+        self._expires_at = 0.0
+
+    def token(self) -> str:
+        if self._token and time.time() < self._expires_at - _REFRESH_SKEW:
+            return self._token
+        req = urllib.request.Request(
+            f"{self._url}/token",
+            data=json.dumps({"scope": self._scope}).encode(),
+            headers={
+                "Authorization": f"Bearer {self._key}",
+                "Content-Type": "application/json",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read())
+            token = data["access_token"]
+            expires_in = float(data.get("expires_in", 300))
+        except urllib.error.HTTPError as error:
+            detail = error.read().decode("utf-8", "replace")[:300]
+            raise TokenError(
+                f"QJ Connect denied the requested capability (HTTP {error.code}): {detail}"
+            ) from None
+        except urllib.error.URLError as error:
+            raise TokenError(f"QJ Connect token broker is unavailable: {error.reason}") from None
+        except (ValueError, KeyError):
+            raise TokenError("QJ Connect token broker returned an unexpected response") from None
+        self._token = token
+        self._expires_at = time.time() + expires_in
+        return self._token

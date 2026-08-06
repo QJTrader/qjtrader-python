@@ -93,3 +93,54 @@ class RestClient:
             return json.loads(body)
         except ValueError:
             raise QJError(f"{method} {path} returned non-JSON") from None
+
+
+class BrokerRestClient:
+    """REST client mediated by QJ Connect's per-run capability broker."""
+
+    def __init__(self, broker_url: str, broker_key: str, plane: str) -> None:
+        self._base = broker_url.rstrip("/")
+        self._key = broker_key
+        self._plane = plane
+
+    def _request(self, method: str, path: str,
+                 params: dict[str, Any] | None = None,
+                 body: dict[str, Any] | None = None) -> dict[str, Any]:
+        payload = json.dumps({
+            "plane": self._plane,
+            "method": method,
+            "path": path,
+            "params": {key: value for key, value in (params or {}).items() if value is not None},
+            "body": body,
+        }).encode()
+        request = urllib.request.Request(
+            f"{self._base}/rest",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {self._key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                return json.loads(response.read())
+        except urllib.error.HTTPError as error:
+            detail = error.read().decode("utf-8", "replace")[:500]
+            raise QJError(
+                f"QJ Connect denied the REST capability (HTTP {error.code}): {detail}"
+            ) from None
+        except urllib.error.URLError as error:
+            raise QJError(f"QJ Connect REST broker is unavailable: {error.reason}") from None
+
+    def get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._request("GET", path, params=params)
+
+    def post(self, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._request("POST", path, body=body)
+
+    def put(self, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._request("PUT", path, body=body)
+
+    def delete(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._request("DELETE", path, params=params)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.21
+
+- Added the QJ Connect loopback token broker so supervised local projects use
+  approved, short-lived capabilities without receiving the account secret.
+
 ## 0.5.20
 
 - Added `Client.auction_imbalance()` for normalized Canadian-equity MOC history.

@@ -22,11 +22,11 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Optional, TypedDict
 
-from .auth import TokenSource
+from .auth import BrokerTokenSource, TokenSource
 from .errors import QJError
 from .market_data import MarketData
 from .orders import Orders
-from .rest import RestClient
+from .rest import BrokerRestClient, RestClient
 
 # Public defaults (override via args or QJ_* env vars).
 DEFAULT_TOKEN_URL = (
@@ -141,7 +141,13 @@ class Client:
                  rest_opener=None) -> None:
         self._client_id = client_id or os.environ.get("QJ_CLIENT_ID")
         self._client_secret = client_secret or os.environ.get("QJ_CLIENT_SECRET")
-        if not self._client_id or not self._client_secret:
+        self._broker_url = os.environ.get("QJ_TOKEN_BROKER_URL", "").strip()
+        self._broker_key = os.environ.get("QJ_TOKEN_BROKER_KEY", "").strip()
+        if bool(self._broker_url) != bool(self._broker_key):
+            raise QJError("QJ Connect token broker configuration is incomplete")
+        if self._broker_url and self._broker_key:
+            self._client_id = self._client_id or "qj-connect-supervised-project"
+        elif not self._client_id or not self._client_secret:
             raise QJError(
                 "client_id/client_secret required — pass them to Client(...) or set "
                 "QJ_CLIENT_ID and QJ_CLIENT_SECRET. Get a free sandbox key at "
@@ -185,7 +191,10 @@ class Client:
         options.update({key: value for key, value in overrides.items() if value is not None})
         return cls(**options)
 
-    def _token_source(self, scope: str) -> TokenSource:
+    def _token_source(self, scope: str) -> TokenSource | BrokerTokenSource:
+        if self._broker_url and self._broker_key:
+            return BrokerTokenSource(self._broker_url, self._broker_key, scope)
+        assert self._client_id and self._client_secret
         return TokenSource(self._token_url, self._client_id, self._client_secret, scope)
 
     def market_data(self) -> MarketData:
@@ -308,8 +317,10 @@ class Client:
         return self.data_admin_rest().post(
             f"/api/v1/admin/limits/{target}", body)
 
-    def orders_rest(self, opener=None) -> RestClient:
+    def orders_rest(self, opener=None) -> RestClient | BrokerRestClient:
         """REST client for the orders gateway (events journal, open orders)."""
+        if self._broker_url and self._broker_key:
+            return BrokerRestClient(self._broker_url, self._broker_key, "orders")
         return RestClient(
             f"https://{self._orders_host}:{self._orders_rest_port}",
             self._token_source(ORDERS_SCOPE),

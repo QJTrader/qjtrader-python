@@ -57,6 +57,17 @@ def test_client_requires_credentials(monkeypatch):
         qjtrader.Client()
 
 
+def test_client_accepts_supervised_qj_connect_broker(monkeypatch):
+    monkeypatch.delenv("QJ_CLIENT_ID", raising=False)
+    monkeypatch.delenv("QJ_CLIENT_SECRET", raising=False)
+    monkeypatch.setenv("QJ_TOKEN_BROKER_URL", "http://127.0.0.1:8123")
+    monkeypatch.setenv("QJ_TOKEN_BROKER_KEY", "run-key")
+    client = qjtrader.Client()
+    source = client._token_source("qj-data-feed/market-data")
+    assert source._url == "http://127.0.0.1:8123"
+    assert source._key == "run-key"
+
+
 def test_client_reads_env_and_defaults(monkeypatch):
     monkeypatch.setenv("QJ_CLIENT_ID", "cid")
     monkeypatch.setenv("QJ_CLIENT_SECRET", "sec")

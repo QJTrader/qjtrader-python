@@ -3,7 +3,7 @@ import io
 import json
 
 import qjtrader.auth as auth_mod
-from qjtrader.auth import TokenSource
+from qjtrader.auth import BrokerTokenSource, TokenSource
 from qjtrader.errors import TokenError
 
 
@@ -73,3 +73,23 @@ def test_sends_client_credentials_grant(monkeypatch):
     assert "grant_type=client_credentials" in captured["body"]
     assert "scope=qj-data-feed%2Forders" in captured["body"]
     assert captured["auth"].startswith("Basic ")
+
+
+def test_broker_token_source_sends_only_scope_and_run_key(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(req, timeout=5):
+        captured["url"] = req.full_url
+        captured["body"] = json.loads(req.data)
+        captured["auth"] = req.headers.get("Authorization")
+        return _Resp(json.dumps({"access_token": "limited", "expires_in": 300}).encode())
+
+    monkeypatch.setattr(auth_mod.urllib.request, "urlopen", fake_urlopen)
+    source = BrokerTokenSource("http://127.0.0.1:8123", "run-secret", "qj-data-feed/market-data")
+    assert source.token() == "limited"
+    assert source.token() == "limited"
+    assert captured == {
+        "url": "http://127.0.0.1:8123/token",
+        "body": {"scope": "qj-data-feed/market-data"},
+        "auth": "Bearer run-secret",
+    }

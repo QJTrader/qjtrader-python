@@ -4,7 +4,7 @@ import pytest
 from qjtrader.auth import TokenSource
 from qjtrader.client import Client
 from qjtrader.errors import QJError
-from qjtrader.rest import RestClient
+from qjtrader.rest import BrokerRestClient, RestClient
 
 
 @pytest.fixture(autouse=True)
@@ -28,6 +28,34 @@ def test_rest_get_filters_params_and_sends_bearer():
     assert "symbol=CA%3ARY" in seen["url"] and "interval=1m" in seen["url"]
     assert "to=" not in seen["url"]          # None dropped
     assert "limit=5" in seen["url"]
+
+
+def test_broker_rest_sends_operation_without_account_credentials(monkeypatch):
+    import io
+    import json
+    import qjtrader.rest as rest_module
+
+    captured = {}
+
+    class Response(io.BytesIO):
+        def __enter__(self): return self
+        def __exit__(self, *args): self.close()
+
+    def fake_urlopen(request, timeout=20):
+        captured["url"] = request.full_url
+        captured["auth"] = request.headers.get("Authorization")
+        captured["payload"] = json.loads(request.data)
+        return Response(b'{"positions": {}}')
+
+    monkeypatch.setattr(rest_module.urllib.request, "urlopen", fake_urlopen)
+    client = BrokerRestClient("http://127.0.0.1:9000", "run-key", "orders")
+    assert client.get("/api/v1/positions")["positions"] == {}
+    assert captured["url"] == "http://127.0.0.1:9000/rest"
+    assert captured["auth"] == "Bearer run-key"
+    assert captured["payload"] == {
+        "plane": "orders", "method": "GET", "path": "/api/v1/positions",
+        "params": {}, "body": None,
+    }
 
 
 def test_rest_get_raises_on_http_error():
