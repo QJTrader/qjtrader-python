@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.19
+
+- Added `Client.close_flow()` and `Client.sxf_close_flow()` for normalized MX
+  Basis Trade on Close lifecycle history across recorded quarterly contracts.
+- The result keeps official and inferred underlying closes distinct, joins BSF
+  and SXF by exchange trade number, and carries correction/cancellation state.
+
 ## 0.5.18
 
 - Added `Client.market_events()` for recorded production quotes, trades, Level 2

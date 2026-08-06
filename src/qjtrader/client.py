@@ -340,6 +340,24 @@ class Client:
             "symbol": symbol, "from": frm, "to": to,
             "types": ",".join(types) if types else None, "limit": limit})
 
+    def close_flow(self, product: str = "SXF", contract: str | None = None,
+                   frm=None, to=None, limit: int = 5000) -> dict:
+        """Normalized MX Basis Trade on Close lifecycle history.
+
+        Joins the continuous basis-market trade to the finalized futures trade
+        and any correction using the exchange trade number. This is not an
+        auction-imbalance series. ``contract`` may be a code such as ``U26``;
+        omit it to scan recorded quarterly contracts across the date range.
+        """
+        return self.data_rest().get("/api/v1/close-flow", {
+            "product": product, "contract": contract, "from": frm, "to": to,
+            "limit": limit})
+
+    def sxf_close_flow(self, contract: str | None = None,
+                       frm=None, to=None, limit: int = 5000) -> dict:
+        """Convenience wrapper for :meth:`close_flow` with ``product="SXF"``."""
+        return self.close_flow("SXF", contract, frm, to, limit)
+
     def stats(self, symbol: str, interval: str = "1m", window: float = 3600.0) -> dict:
         """Server-computed digest plus the same history provenance fields."""
         return self.data_rest().get("/api/v1/stats", {

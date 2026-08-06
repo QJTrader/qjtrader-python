@@ -99,6 +99,21 @@ def test_client_market_events_hits_data_gateway_with_filters():
     assert "types=trade%2Clevel2" in calls[0] and "limit=1000" in calls[0]
 
 
+def test_client_close_flow_hits_normalized_history_endpoint():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append(url)
+        return 200, b'{"records": [], "source": "unavailable"}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    c.sxf_close_flow(contract="U26", frm="2026-08-04T00:00:00Z",
+                     to="2026-08-05T00:00:00Z", limit=1000)
+    assert "data-feed.qjtrader.ai:8443/api/v1/close-flow" in calls[0]
+    assert "product=SXF" in calls[0] and "contract=U26" in calls[0]
+    assert "limit=1000" in calls[0]
+
+
 def test_feed_admin_limits_use_admin_scope_and_encode_target():
     calls = []
 

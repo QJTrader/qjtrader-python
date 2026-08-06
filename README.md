@@ -167,6 +167,12 @@ events = client.market_events(
     to="2026-07-31T15:00:00-04:00",
     types=["trade", "quote", "level2"],
 )
+
+# Normalized SXF Basis Trade on Close history. This joins BSF basis trades to
+# finalized SXF allocations and corrections; it is not an auction imbalance.
+close = client.sxf_close_flow(
+    frm="2026-08-04T00:00:00Z", to="2026-08-05T00:00:00Z"
+)
 ```
 
 MX does not disseminate a CGB/SXF auction-imbalance message. For SXF Basis Trade
