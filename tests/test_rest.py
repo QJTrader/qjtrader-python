@@ -114,6 +114,20 @@ def test_client_close_flow_hits_normalized_history_endpoint():
     assert "limit=1000" in calls[0]
 
 
+def test_client_auction_imbalance_hits_normalized_history_endpoint():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append(url)
+        return 200, b'{"records": [], "source": "unavailable"}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    c.auction_imbalance("CA:RY", frm="2026-08-04T19:50:00Z",
+                        to="2026-08-04T20:01:00Z", limit=100)
+    assert "data-feed.qjtrader.ai:8443/api/v1/auction-imbalance" in calls[0]
+    assert "symbol=CA%3ARY" in calls[0] and "limit=100" in calls[0]
+
+
 def test_feed_admin_limits_use_admin_scope_and_encode_target():
     calls = []
 

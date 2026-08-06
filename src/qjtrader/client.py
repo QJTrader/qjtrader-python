@@ -358,6 +358,16 @@ class Client:
         """Convenience wrapper for :meth:`close_flow` with ``product="SXF"``."""
         return self.close_flow("SXF", contract, frm, to, limit)
 
+    def auction_imbalance(self, symbol: str, frm=None, to=None,
+                          limit: int = 5000) -> dict:
+        """Normalized authoritative Canadian-equity MOC history.
+
+        Returns ten-second TL1 imbalance observations plus aggregated closing
+        auction prints. TL2 transport summaries are counted but excluded.
+        """
+        return self.data_rest().get("/api/v1/auction-imbalance", {
+            "symbol": symbol, "from": frm, "to": to, "limit": limit})
+
     def stats(self, symbol: str, interval: str = "1m", window: float = 3600.0) -> dict:
         """Server-computed digest plus the same history provenance fields."""
         return self.data_rest().get("/api/v1/stats", {

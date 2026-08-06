@@ -173,6 +173,12 @@ events = client.market_events(
 close = client.sxf_close_flow(
     frm="2026-08-04T00:00:00Z", to="2026-08-05T00:00:00Z"
 )
+
+# True TSX/TSXV MOC auction history: authoritative TL1 updates plus the
+# aggregated closing auction. Raw transport copies remain in market_events().
+auction = client.auction_imbalance(
+    "CA:RY", frm="2026-08-04T19:50:00Z", to="2026-08-04T20:01:00Z"
+)
 ```
 
 MX does not disseminate a CGB/SXF auction-imbalance message. For SXF Basis Trade

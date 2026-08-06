@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.20
+
+- Added `Client.auction_imbalance()` for normalized Canadian-equity MOC history.
+  It keeps authoritative ten-second TL1 observations, excludes/counts TL2
+  transport summaries, and aggregates the individual closing allocation prints.
+
 ## 0.5.19
 
 - Added `Client.close_flow()` and `Client.sxf_close_flow()` for normalized MX
