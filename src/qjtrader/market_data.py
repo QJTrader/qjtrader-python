@@ -5,9 +5,10 @@ https://docs.qjtrader.ai/docs/ai/symbology
 """
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Iterable, Iterator, Any
 
 from ._stream import _Stream
+from .events import EventDiagnostics, NormalizedEvent, normalized_events
 
 
 def top_of_book(message: dict) -> dict:
@@ -66,6 +67,20 @@ class MarketData(_Stream):
 
     def ping(self) -> None:
         self.send({"action": "ping"})
+
+    def normalized_messages(self, timeout: float | None = None, *,
+                            include_heartbeats: bool = False,
+                            diagnostics: EventDiagnostics | None = None
+                            ) -> Iterator[NormalizedEvent]:
+        """Yield stable event envelopes without changing the raw streaming path.
+
+        Use :meth:`messages` directly for the smallest possible hot-path work.
+        This view is intended for dashboards, analytics and general projects;
+        every envelope retains the original message under ``raw``.
+        """
+        raw: Iterator[dict[str, Any]] = self.messages(
+            timeout=timeout, include_heartbeats=include_heartbeats)
+        yield from normalized_events(raw, diagnostics=diagnostics)
 
     def quote(self, symbol: str, timeout: float = 10.0) -> dict:
         """Return a normalized touch.

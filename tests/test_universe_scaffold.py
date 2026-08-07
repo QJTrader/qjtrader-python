@@ -4,6 +4,7 @@ import pytest
 
 from qjtrader.scaffold import create_strategy_project
 from qjtrader.universe import describe_instrument, product_key, search_symbols
+from qjtrader.client import Client
 
 
 @pytest.mark.parametrize(("symbol", "key"), [
@@ -33,6 +34,27 @@ def test_describe_is_authority_aware():
 def test_search_filters_and_bounds():
     found = search_symbols(["CA:RY", "US:SPY", "MX:CGBU26"], "future", limit=1)
     assert len(found) == 1 and found[0]["symbol"] == "MX:CGBU26"
+
+
+def test_client_prefers_feed_owned_instrument_catalog():
+    class Rest:
+        def get(self, _path):
+            return {
+                "symbols": ["MX:CGBU26"],
+                "instruments": [{
+                    "instrument_id": "qj_abc", "canonical_symbol": "MX:CGBU26",
+                    "asset_class": "future", "instrument_type": "future",
+                }],
+            }
+
+    client = object.__new__(Client)
+    client.data_rest = lambda: Rest()
+    client.session_info = lambda: {"data_environment": "real",
+                                   "orders_environment": "sandbox"}
+    result = client.search_universe("future")
+    assert result["source"] == "gateway instrument catalog"
+    assert result["instruments"][0]["instrument_id"] == "qj_abc"
+    assert result["instruments"][0]["data_environment"] == "real"
 
 
 def test_scaffold_is_safe_and_does_not_overwrite(tmp_path: Path):

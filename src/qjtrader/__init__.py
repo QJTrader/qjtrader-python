@@ -28,6 +28,8 @@ from .client import (
 )
 from .errors import AuthError, ConnectionClosed, QJError, TokenError
 from .market_data import MarketData
+from .events import (EventDiagnostics, NormalizedEvent, infer_aggressor,
+                     normalize_event, normalize_timestamp, normalized_events)
 from .calendar import (front_expiry_month, front_future, futures_strip,
                        option_front_expiry, roll_needed)
 from .intents import intent_diff
@@ -43,6 +45,12 @@ from .universe import describe_instrument, product_key, search_symbols
 __all__ = [
     "Client",
     "MarketData",
+    "NormalizedEvent",
+    "EventDiagnostics",
+    "normalize_event",
+    "normalized_events",
+    "normalize_timestamp",
+    "infer_aggressor",
     "Orders",
     "RestClient",
     "QJError",

@@ -275,20 +275,44 @@ class Client:
         return info
 
     def search_universe(self, query: str = "", limit: int = 50) -> dict[str, Any]:
-        """Search symbols visible to this credential and explain their capabilities."""
+        """Search the feed-owned catalog visible to this credential.
+
+        Newer gateways return canonical instrument ids and typed metadata. The
+        older symbol-only response remains supported as a compatibility path.
+        """
         from .universe import search_symbols
-        symbols = self.data_rest().get("/api/v1/symbols").get("symbols", [])
+        catalog = self.data_rest().get("/api/v1/symbols")
+        symbols = catalog.get("symbols", [])
         session = self.session_info()
-        return {
-            "query": query,
-            "source": "credential-visible symbols",
-            "data_environment": session.get("data_environment"),
-            "orders_environment": session.get("orders_environment"),
-            "instruments": search_symbols(
+        instruments = catalog.get("instruments")
+        if isinstance(instruments, list):
+            needle = query.strip().lower()
+            selected = []
+            for raw in instruments:
+                if not isinstance(raw, dict):
+                    continue
+                item = dict(raw)
+                item["data_environment"] = session.get("data_environment")
+                item["orders_environment"] = session.get("orders_environment")
+                haystack = " ".join(str(value) for value in item.values()).lower()
+                if needle and needle not in haystack:
+                    continue
+                selected.append(item)
+                if len(selected) >= max(1, min(limit, 200)):
+                    break
+        else:
+            selected = search_symbols(
                 list(map(str, symbols)), query, limit=limit,
                 data_environment=session.get("data_environment"),
                 orders_environment=session.get("orders_environment"),
-            ),
+            )
+        return {
+            "query": query,
+            "source": ("gateway instrument catalog" if isinstance(instruments, list)
+                       else "legacy credential-visible symbols"),
+            "data_environment": session.get("data_environment"),
+            "orders_environment": session.get("orders_environment"),
+            "instruments": selected,
         }
 
     def describe_instrument(self, symbol: str) -> dict[str, Any]:

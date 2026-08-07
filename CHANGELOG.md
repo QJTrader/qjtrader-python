@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.26
+
+- Added opt-in normalized streaming events with stable event types, canonical
+  instrument identity, timestamps, explicit inference labels, retained raw
+  payloads, and diagnostics for unknown or incomplete events.
+- `Client.search_universe()` now prefers the Gateway's canonical instrument
+  catalog while preserving the legacy local fallback.
+- Kept the existing raw `MarketData.messages()` path unchanged for clients that
+  need the lowest-overhead source payloads.
+
 ## 0.5.25
 
 - Added `Client.account_activity()` for account-wide live working orders and retained
