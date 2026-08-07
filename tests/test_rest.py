@@ -297,3 +297,16 @@ def test_client_executions_hits_trade_log_projection():
     c.executions(cursor="opaque", limit=25)
     assert "orders.qjtrader.ai:8443/api/v1/executions" in calls[0]
     assert "cursor=opaque" in calls[0] and "limit=25" in calls[0]
+
+
+def test_client_account_activity_hits_account_wide_projection():
+    calls = []
+
+    def opener(url, headers, method="GET", data=None):
+        calls.append(url)
+        return 200, b'{"type": "account_activity", "orders": [], "executions": []}'
+
+    c = Client(client_id="a", client_secret="b", rest_opener=opener)
+    out = c.account_activity()
+    assert "orders.qjtrader.ai:8443/api/v1/account-activity" in calls[0]
+    assert out["type"] == "account_activity"

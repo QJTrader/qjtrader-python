@@ -283,6 +283,11 @@ accounts active on this particular key. These are a restricted subset of the hum
 access. For combined production keys, Order Entry also returns accounts by market product, and the
 positions endpoint reports product-specific cloud limits alongside broker, fill, and total position
 context where the OMS snapshot is available.
+`client.account_activity()` returns the current account-wide working orders and retained
+executions for those delegated accounts, including activity created by QJTrader Desktop or another
+authorized route. This is distinct from `client.order_snapshot()` and `client.executions()`, which
+are the calling credential's command journal. Unknown-origin orders are visible but intentionally
+not cancelable, and `execution_history_coverage` reports the honest per-account retention boundary.
 Gateway access; changing a local setting or requesting another OAuth scope cannot widen them.
 `client.search_universe()` and `client.describe_instrument(symbol)` provide small,
 machine-readable discovery helpers so code does not have to infer product identity from prose.

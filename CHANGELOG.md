@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.25
+
+- Added `Client.account_activity()` for account-wide live working orders and retained
+  executions, including activity created by QJTrader Desktop or another authorized route.
+- Expanded real-plane position typing and documentation for account-level WAC, opening
+  position inputs, broker/Gateway fill attribution, and independent activity freshness.
+
 ## 0.5.24
 
 - Observation-only live strategies can now set `allow_orders=false` and run

@@ -53,8 +53,14 @@ class PositionDetail(TypedDict, total=False):
     ``source`` are present only when a broker row backs the symbol.
     """
     broker_qty: int
+    broker_fill_qty: int
+    gateway_unconfirmed_fill_qty: int
     fill_qty: int
     total_qty: int
+    average_price: float
+    opening_qty: int
+    opening_price: float
+    price_basis: str
     price: Optional[float]
     currency: Optional[str]
     account: Optional[str]
@@ -112,12 +118,37 @@ class PositionsEnvelope(TypedDict, total=False):
     positions_by_account: Dict[str, Dict[str, PositionDetail]]
     account_profiles: Dict[str, list[AccountProfile]]
     account_financials: Dict[str, AccountFinancial]
+    account_activity: Dict[str, Any]
     admserv_limits: Dict[str, Any]
     admserv_limits_by_product: Dict[str, Dict[str, Any]]
     capital_required: Dict[str, Any]
     broker_asof: Optional[str]
     broker_synced_at: Optional[str]
+    activity_asof: Optional[str]
+    activity_synced_at: Optional[str]
     broker_warnings: list[str]
+
+
+class AccountActivityEnvelope(TypedDict, total=False):
+    """Account-wide live OMS state visible to this credential.
+
+    Unlike the credential journal, this includes broker activity created by QJTrader
+    Desktop or another authorized route on each explicitly delegated account.
+    Unknown-origin orders are read-only and carry ``cancelable=false``.
+    """
+    type: str
+    orders: list[Dict[str, Any]]
+    gateway_orders: list[Dict[str, Any]]
+    broker_orders: list[Dict[str, Any]]
+    executions: list[Dict[str, Any]]
+    accounts: list[str]
+    scope: str
+    broker_asof: Optional[str]
+    broker_synced_at: Optional[str]
+    activity_asof: Optional[str]
+    activity_synced_at: Optional[str]
+    execution_history_coverage: Dict[str, Dict[str, Any]]
+    warnings: list[str]
 
 
 class Client:
@@ -465,9 +496,20 @@ class Client:
 
     def executions(self, since=None, limit: int = 200,
                    cursor: str | None = None) -> dict:
-        """Individual fills and subsequent cancel/correct adjustments (trade log)."""
+        """This credential's fills and cancel/correct adjustments (journal projection)."""
         return self.orders_rest().get("/api/v1/executions", {
             "since": since, "cursor": cursor, "limit": limit})
+
+    def account_activity(self) -> "AccountActivityEnvelope":
+        """Current account-wide orders and retained executions (read-only).
+
+        The real-plane response covers every account explicitly delegated to this
+        credential, including broker activity created by QJTrader Desktop or another
+        authorized route. ``execution_history_coverage`` states the honest per-account
+        retention boundary. Broker orders not created by this credential are returned
+        with ``cancelable=false``.
+        """
+        return self.orders_rest().get("/api/v1/account-activity")
 
     def prove(self, symbol: str = "CA:RY", *, account: str = "SIM",
               timeout: float = 10.0) -> dict:
@@ -520,7 +562,14 @@ class Client:
         ``TotalVolume = InitVolume (broker start-of-day) + NetVolume (today's fills)``
         — plus ``admserv_limits`` (route prechecks plus Desktop/AdmServ risk context),
         ``capital_required``, ``broker_asof`` and ``broker_synced_at``.
-        ``positions_by_account`` preserves the account split and
+        ``positions_by_account`` preserves the account split and includes trading
+        weighted-average cost as ``average_price``. On a real plane, ``fill_qty``
+        combines broker-observed intraday executions with Gateway fills not yet seen
+        by the broker, without double counting. ``opening_qty``/``opening_price`` and
+        ``price_basis`` make that calculation auditable. ``account_activity`` reports
+        account-wide working-order and execution counts, while ``activity_asof`` and
+        ``activity_synced_at`` report freshness separately from the morning snapshot.
+
         ``account_profiles`` maps account numbers to recognizable Desktop trader
         names/CompIDs without exposing credentials. ``admserv_limits_by_product``
         identifies the cloud service route row separately from those human profiles.
